@@ -1,0 +1,72 @@
+on:
+  workflow_call: {}
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    name: linux - ${{ matrix.tool }} - ${{ matrix.config }}
+
+    container:
+      image: ghcr.io/vasama/ubuntu-actions:2024121302
+
+    strategy:
+      fail-fast: false
+      matrix:
+        tool:
+        - gcc
+        - clang
+        - clang-tidy
+        config:
+        - Debug
+        - Release
+        exclude:
+        - tool: clang-tidy
+          config: Debug
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: CMake/CTest (linux - ${{ matrix.tool }} - ${{ matrix.config }})
+      run: |
+        .github/scripts/cxx-testing.ps1 ${{ matrix.tool }} -Config ${{ matrix.config }} -ConanBuild missing
+
+  build-windows:
+    runs-on: windows-latest
+    name: windows - ${{ matrix.tool }} - ${{ matrix.config }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        tool:
+        - msvc
+        - msvc-intellisense
+        - clang-cl
+        - clang-tidy
+        config:
+        - Debug
+        - Release
+        exclude:
+        - tool: msvc-intellisense
+          config: Release
+        - tool: clang-tidy
+          config: Debug
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install conan
+      run: pip3 install conan
+
+    - name: Install ninja
+      if: "'${{ matrix.tool }}' == 'msvc-intellisense'"
+      run: choco install ninja
+
+#    - uses: actions/cache@v3
+#      with:
+#        path: ~/.conan2
+#        key: vsm-build-${{ matrix.os }}-${{ matrix.tool }}-${{ matrix.config }}
+
+    - name: CMake/CTest (windows - ${{ matrix.tool }} - ${{ matrix.config }})
+      run: |
+        .github/scripts/Set-VcVars.ps1
+        .github/scripts/Test-ConanCxxProject.ps1 ${{ matrix.tool }} -Config ${{ matrix.config }} -ConanBuild missing

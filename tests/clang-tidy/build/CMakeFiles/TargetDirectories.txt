@@ -1,0 +1,3 @@
+D:/Code/vsm-actions/tests/clang-tidy/build/CMakeFiles/test_clang_tidy.dir
+D:/Code/vsm-actions/tests/clang-tidy/build/CMakeFiles/edit_cache.dir
+D:/Code/vsm-actions/tests/clang-tidy/build/CMakeFiles/rebuild_cache.dir
