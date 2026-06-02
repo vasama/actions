@@ -36,9 +36,10 @@ function Find-VcVarsDirectory() {
 }
 
 Push-Location (Find-VcVarsDirectory)
-& "$PSScriptRoot/Invoke-NativeCommand.ps1" cmd /c 'vcvarsall.bat x64 > nul & set' | ForEach-Object {
-	if ($_ -match '^(.+?)=(.*)$') {
-		Set-Item -Force -Path "ENV:$($Matches[1])" -Value $Matches[2]
+& "$PSScriptRoot/Utilities/Invoke-NativeCommand.ps1" `
+	cmd /c 'vcvarsall.bat x64 > nul & set' | ForEach-Object {
+		if ($_ -match '^(.+?)=(.*)$') {
+			Set-Item -Force -Path "ENV:$($Matches[1])" -Value $Matches[2]
+		}
 	}
-}
 Pop-Location

@@ -11,7 +11,7 @@ param(
 	[switch]$WhatIf=$false
 )
 
-. "$PSScriptRoot/Invoke-NativeCommand.ps1"
+. "$PSScriptRoot/Utilities/Invoke-NativeCommand.ps1"
 
 $Compiler = $null
 $Analysis = $null
@@ -64,7 +64,7 @@ if ($Analysis) {
 		throw "tool $Tool requires the use of ninja"
 	}
 
-	$AnalysisModule = "$PSScriptRoot/cxx-analysis-modules/$Compiler-$Analysis.ps1"
+	$AnalysisModule = "$PSScriptRoot/CxxAnalysisModules/$Compiler-$Analysis.ps1"
 	if (!(Test-Path -PathType Leaf $AnalysisModule)) {
 		throw "no such analysis: $Analysis"
 	}
