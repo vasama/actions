@@ -18,11 +18,16 @@ jobs:
 
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/vasama/actions-ubuntu:v0
+      image: ghcr.io/vasama/actions-ubuntu:v0_1
 
     steps:
     - uses: actions/checkout@v4
     - uses: vasama/actions/setup@main
+    - name: TEST
+      run: |
+        cd ~
+        echo $(pwd)
+        ls -a .
 
     - name: CMake/CTest (linux - ${{ matrix.tool }} - ${{ matrix.config }})
       run: |

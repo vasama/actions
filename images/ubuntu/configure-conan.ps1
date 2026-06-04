@@ -2,9 +2,6 @@
 
 param(
 	[Parameter(Mandatory=$true)]
-	[string]$ConanDirectory,
-
-	[Parameter(Mandatory=$true)]
 	[string]$Architecture,
 
 	[Parameter(Mandatory=$true)]
@@ -47,7 +44,9 @@ if (!(Test-Path -PathType Container $ConfigurationDirectory)) {
 }
 
 $ProfilesDirectory = "$ConfigurationDirectory/profiles"
-New-Item -ItemType Directory $ProfilesDirectory -ErrorAction SilentlyContinue
+if (!(Test-Path -PathType Container $ProfilesDirectory)) {
+	New-Item -ItemType Directory $ProfilesDirectory
+}
 
 Generate-CompilerProfile 'gcc'   'g++'     $GCC  | Out-File "$ProfilesDirectory/vsm-gcc"
 Generate-CompilerProfile 'clang' 'clang++' $LLVM | Out-File "$ProfilesDirectory/vsm-clang"

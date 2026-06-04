@@ -15,4 +15,8 @@ runs:
 
     - name: Copy library files (temporary for testing)
       shell: pwsh
-      run: Copy-Item -Recurse -LiteralPath /tmp/vsm-actions-tmp/actions-main/library -Destination /tmp/vsm-actions
+      run: |
+        Copy-Item -Recurse -LiteralPath /tmp/vsm-actions-tmp/actions-main/library -Destination /tmp/vsm-actions
+        chmod +x /tmp/vsm-actions/scripts/*.ps1
+        chmod +x /tmp/vsm-actions/scripts/Utilities/*.ps1
+        chmod +x /tmp/vsm-actions/scripts/CxxAnalysisModules/*.ps1

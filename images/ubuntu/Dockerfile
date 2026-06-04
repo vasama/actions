@@ -56,8 +56,7 @@ RUN --mount=type=bind,source=images/ubuntu/configure-user.sh,target=/tmp/run.sh 
 USER $USER_ID:$USER_ID
 
 # Create default Conan profile:
-RUN --mount=type=bind,source=conan,target=/tmp/run \
-	--mount=type=bind,source=images/ubuntu/configure-conan.ps1,target=/tmp/run.ps1 \
-	/tmp/run.ps1 -ConanDirectory /tmp/run -Architecture x86_64 -GCC $GCC_VERSION -LLVM $LLVM_VERSION
+RUN --mount=type=bind,source=images/ubuntu/configure-conan.ps1,target=/tmp/run.ps1 \
+	/tmp/run.ps1 -Architecture x86_64 -GCC $GCC_VERSION -LLVM $LLVM_VERSION
 
 ENTRYPOINT ["pwsh"]

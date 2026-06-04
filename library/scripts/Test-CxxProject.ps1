@@ -113,6 +113,14 @@ $CMakePreset = "conan-$ConanPreset"
 $BuildDirectory = "./build/$ConanPreset"
 
 if (!$Step -or $Step -eq 'conan-install') {
+	Write-Output "DEBUG: profiles:"
+	if (Test-Path '/github/home') {
+		/usr/bin/ls -a '/github/home'
+	} else {
+		Write-Output '/github/home does not exist'
+	}
+	Write-Output "DEBUG: options: $ConanArguments"
+
 	if ($ConanBuild) {
 		$ConanArguments += @("-b=$ConanBuild")
 	}
