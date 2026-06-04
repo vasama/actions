@@ -1,0 +1,17 @@
+on:
+  workflow_call: {}
+
+jobs:
+  merge-linux:
+    name: linux
+
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/vasama/actions-ubuntu:v1
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check branch
+      run: |
+        scripts/Test-CxxProjectBranch.ps1 -BaseRef "${{ inputs.base_ref }}"

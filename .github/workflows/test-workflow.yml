@@ -1,0 +1,16 @@
+on:
+  workflow_call: {}
+
+jobs:
+  test-job:
+    name: Test Job
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Test Step
+      run: |
+        echo $(pwd)
+        echo "." && ls .
+        echo ".." && ls ..
+        echo "repository: ${{ github.repository }}"

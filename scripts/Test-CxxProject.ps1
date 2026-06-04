@@ -79,7 +79,7 @@ if ($IsWindows) {
 $ConanArguments = @($ConanSettings | ForEach-Object { "-s=$_" })
 $ConanArguments += @("-pr=vsm-${Compiler}")
 
-$ConanProfileRoot = Resolve-Path "$PSScriptRoot/../conan"
+$ConanProfileRoot = Resolve-Path "$PSScriptRoot/../conan/profiles"
 function Include-ConanProfile($Profile) {
 	$ProfilePath = "$script:ConanProfileRoot/$Profile"
 	if (Test-Path -PathType Leaf $ProfilePath) {
