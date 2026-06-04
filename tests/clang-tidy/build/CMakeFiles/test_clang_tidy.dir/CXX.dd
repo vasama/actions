@@ -1,3 +1,0 @@
-ninja_dyndep_version = 1.0
-build CMakeFiles/test_clang_tidy.dir/clang_tidy.cpp.obj: dyndep
-

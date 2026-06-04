@@ -1,7 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"D:/Code/vsm-actions/tests/clang-tidy/build/cmake_install.cmake"
-	],
-	"Parallel" : false
-}

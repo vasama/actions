@@ -47,11 +47,7 @@ if (!(Test-Path -PathType Container $ConfigurationDirectory)) {
 }
 
 $ProfilesDirectory = "$ConfigurationDirectory/profiles"
-if (!(Test-Path -PathType Container $ProfilesDirectory)) {
-	New-Item -ItemType Directory $ProfilesDirectory
-}
-
-Copy-Item -Path "$ConanDirectory/settings_user.yml" -Destination "$ConfigurationDirectory/"
+New-Item -ItemType Directory $ProfilesDirectory -ErrorAction SilentlyContinue
 
 Generate-CompilerProfile 'gcc'   'g++'     $GCC  | Out-File "$ProfilesDirectory/vsm-gcc"
 Generate-CompilerProfile 'clang' 'clang++' $LLVM | Out-File "$ProfilesDirectory/vsm-clang"

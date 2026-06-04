@@ -7,11 +7,11 @@ jobs:
     name: "Trigger conan-index workflow"
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: vasama/actions/setup@main
 
     - name: "Trigger conan-index workflow"
       run: |
-        scripts/Trigger-ConanIndex.ps1 \
+        /tmp/vsm-actions/scripts/Trigger-ConanIndex.ps1 \
           -GitHubSourceRepository ${{ github.repository }} \
           -GitHubSourceReference '${{ github.ref }}' \
           -GitHubIndexRepository '${{ github.repository_owner }}/conan-index' \

@@ -1,9 +1,0 @@
-{
-  "revision": 0,
-  "rules": [
-    {
-      "primary-output": "CMakeFiles\\test_clang_tidy.dir\\clang_tidy.cpp.obj"
-    }
-  ],
-  "version": 1
-}

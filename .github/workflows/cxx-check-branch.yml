@@ -7,11 +7,12 @@ jobs:
 
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/vasama/actions-ubuntu:v1
+      image: ghcr.io/vasama/actions-ubuntu:v0
 
     steps:
     - uses: actions/checkout@v4
+    - uses: vasama/actions/setup@main
 
     - name: Check branch
       run: |
-        scripts/Test-CxxProjectBranch.ps1 -BaseRef "${{ inputs.base_ref }}"
+        /tmp/vsm-actions/scripts/Test-CxxProjectBranch.ps1 -BaseRef "${{ inputs.base_ref }}"
