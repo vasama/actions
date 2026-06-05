@@ -55,6 +55,9 @@ RUN --mount=type=bind,source=images/ubuntu/configure-user.sh,target=/tmp/run.sh 
 # Switch to the GitHub user:
 USER $USER_ID:$USER_ID
 
+# Configure Conan home directory:
+ENV CONAN_HOME="/home/github/.conan2"
+
 # Create default Conan profile:
 RUN --mount=type=bind,source=images/ubuntu/configure-conan.ps1,target=/tmp/run.ps1 \
 	/tmp/run.ps1 -Architecture x86_64 -GCC $GCC_VERSION -LLVM $LLVM_VERSION

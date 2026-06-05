@@ -1,0 +1,23 @@
+name: 'vasama/actions: test-cxx-project'
+description: 'Test C++ project using Conan, CMake, CTest'
+author: 'Lauri Vasama'
+
+inputs:
+  tool:
+    description: 'C++ compiler or analysis tool'
+    required: true
+  config:
+    description: 'C++ build configuration name'
+    required: true
+
+runs:
+  using: composite
+  steps:
+  - name: Conan/CMake/CTest (${{ runner.os }} - ${{ inputs.tool }} - ${{ inputs.config }})
+    shell: pwsh
+    run: |
+      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProject.ps1" ${{ inputs.tool }} -Config ${{ inputs.config }} -ConanBuild missing
+
+#      if ($IsWindows) {
+#        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Set-VcVars.ps1"
+#      }

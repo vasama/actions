@@ -1,0 +1,14 @@
+name: 'vasama/actions: setup-conan-windows'
+description: 'Install and configure Conan on Windows'
+author: 'Lauri Vasama'
+
+runs:
+  using: composite
+  steps:
+  - name: Install Conan
+    shell: pwsh
+    run: pipx install conan
+
+  - name: Configure Conan
+    shell: pwsh
+    run: conan config install "$ENV:RUNNER_TEMP/vsm-actions/conan-windows"

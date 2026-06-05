@@ -5,18 +5,17 @@ author: 'Lauri Vasama'
 runs:
   using: composite
   steps:
-    - name: Download library archive
-      shell: pwsh
-      run: Invoke-WebRequest -Uri 'https://github.com/vasama/actions/archive/refs/heads/main.zip' -OutFile /tmp/vsm-actions.zip
+  - name: Download library archive
+    shell: pwsh
+    run: |
+      Invoke-WebRequest -Uri 'https://github.com/vasama/actions/archive/refs/heads/main.zip' -OutFile "$ENV:RUNNER_TEMP/vsm-actions.zip"
 
-    - name: Extract library files
-      shell: pwsh
-      run: Expand-Archive -LiteralPath /tmp/vsm-actions.zip -DestinationPath /tmp/vsm-actions-tmp
+  - name: Extract library files
+    shell: pwsh
+    run: |
+      Expand-Archive -LiteralPath "$ENV:RUNNER_TEMP/vsm-actions.zip" -DestinationPath "$ENV:RUNNER_TEMP/vsm-actions-tmp"
 
-    - name: Copy library files (temporary for testing)
-      shell: pwsh
-      run: |
-        Copy-Item -Recurse -LiteralPath /tmp/vsm-actions-tmp/actions-main/library -Destination /tmp/vsm-actions
-        chmod +x /tmp/vsm-actions/scripts/*.ps1
-        chmod +x /tmp/vsm-actions/scripts/Utilities/*.ps1
-        chmod +x /tmp/vsm-actions/scripts/CxxAnalysisModules/*.ps1
+  - name: Copy library files (temporary for testing)
+    shell: pwsh
+    run: |
+      Copy-Item -Recurse -LiteralPath "$ENV:RUNNER_TEMP/vsm-actions-tmp/actions-main/library" -Destination "$ENV:RUNNER_TEMP/vsm-actions"

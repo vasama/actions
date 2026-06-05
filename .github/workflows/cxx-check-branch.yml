@@ -12,6 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: vasama/actions/setup@main
+    - uses: vasama/actions/setup-conan-index@main
 
     - name: Check branch
       run: |

@@ -2,73 +2,62 @@ on:
   workflow_call: {}
 
 jobs:
-  build-linux:
-    name: linux - ${{ matrix.tool }} - ${{ matrix.config }}
+  testing:
+    name: Linux - ${{ matrix.tool }} - ${{ matrix.config }}
 
     strategy:
       fail-fast: false
       matrix:
         tool:
         #- clang
-        - gcc
         #- clang-tidy
+        - gcc
         config:
         - Debug
         #- Release
+        #exclude:
+        #  - tool: clang-tidy
+        #    config: Release
 
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/vasama/actions-ubuntu:v0_1
+      image: ghcr.io/vasama/actions-ubuntu:v0_3
 
     steps:
     - uses: actions/checkout@v4
     - uses: vasama/actions/setup@main
-    - name: TEST
-      run: |
-        cd ~
-        echo $(pwd)
-        ls -a .
-
-    - name: CMake/CTest (linux - ${{ matrix.tool }} - ${{ matrix.config }})
-      run: |
-        /tmp/vsm-actions/scripts/Test-CxxProject.ps1 ${{ matrix.tool }} -Config ${{ matrix.config }} -ConanBuild missing
+    - uses: vasama/actions/setup-conan-index@main
+    - uses: vasama/actions/test-cxx-project@main
+      with:
+        tool: ${{ matrix.tool }}
+        config: ${{ matrix.config }}
 
 #  build-windows:
-#    name: windows - ${{ matrix.tool }} - ${{ matrix.config }}
+#    name: Windows - ${{ matrix.tool }} - ${{ matrix.config }}
 #
 #    strategy:
 #      fail-fast: false
 #      matrix:
 #        tool:
-#        - msvc
+#        - clang
 #        - clang-cl
-#        - intellisense
+#        - msvc
+#        - msvc-intellisense
 #        config:
 #        - Debug
 #        - Release
 #        exclude:
-#        - tool: intellisense
+#        - tool: msvc-intellisense
 #          config: Release
 #
-#    runs-on: windows-latest
+#    runs-on: windows-2025-vs2026
 #
 #    steps:
 #    - uses: actions/checkout@v4
 #    - uses: vasama/actions/setup@main
-#
-#    - name: Install conan
-#      run: pip3 install conan
-#
-#    - name: Install ninja
-#      if: "'${{ matrix.tool }}' == 'msvc-intellisense'"
-#      run: choco install ninja
-#
-##    - uses: actions/cache@v3
-##      with:
-##        path: ~/.conan2
-##        key: vsm-build-${{ matrix.os }}-${{ matrix.tool }}-${{ matrix.config }}
-#
-#    - name: CMake/CTest (windows - ${{ matrix.tool }} - ${{ matrix.config }})
-#      run: |
-#        /tmp/vsm-actions/scripts/Set-VcVars.ps1
-#        /tmp/vsm-actions/scripts/Test-CxxProject.ps1 ${{ matrix.tool }} -Config ${{ matrix.config }} -ConanBuild missing
+#    - uses: vasama/actions/setup-windows@main
+#    - uses: vasama/actions/setup-conan-index@main
+#    - uses: vasama/actions/test-cxx-project@main
+#      with:
+#        tool: ${{ matrix.tool }}
+#        config: ${{ matrix.config }}
