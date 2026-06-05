@@ -16,8 +16,8 @@ runs:
   - name: Conan/CMake/CTest (${{ runner.os }} - ${{ inputs.tool }} - ${{ inputs.config }})
     shell: pwsh
     run: |
-      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProject.ps1" ${{ inputs.tool }} -Config ${{ inputs.config }} -ConanBuild missing
+      if ($IsWindows) {
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Utilities/Set-VcVars.ps1"
+      }
 
-#      if ($IsWindows) {
-#        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Set-VcVars.ps1"
-#      }
+      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProject.ps1" ${{ inputs.tool }} -Config ${{ inputs.config }} -ConanBuild missing
