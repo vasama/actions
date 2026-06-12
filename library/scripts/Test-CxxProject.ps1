@@ -81,7 +81,7 @@ $ConanArguments += @("-pr=vsm-${Compiler}")
 
 $ConanProfileRoot = Resolve-Path "$PSScriptRoot/../conan"
 function Include-ConanProfile($Profile) {
-	$ProfilePath = "$script:ConanProfileRoot/$Profile"
+	$ProfilePath = Resolve-Path "$script:ConanProfileRoot/$Profile"
 	if (Test-Path -PathType Leaf $ProfilePath) {
 		$script:ConanArguments += @("-pr=$ProfilePath")
 	}
@@ -118,7 +118,7 @@ if (!$Step -or $Step -eq 'conan-install') {
 	}
 
 	if ($WhatIf) {
-		Write-Output "conan install $ConanArguments ."
+		Write-Output "conan install $($ConanArguments | ForEach-Object { "'$_'" } | Join-String -Separator ' ') ."
 	} else {
 		Invoke-NativeCommand conan install @ConanArguments .
 	}
