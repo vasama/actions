@@ -1,0 +1,11 @@
+[settings]
+arch=x86_64
+compiler=msvc
+compiler.cppstd=23
+compiler.runtime=dynamic
+compiler.version=194
+os=Windows
+
+[conf]
+tools.cmake.cmaketoolchain:generator=Visual Studio 18 2026
+tools.microsoft.msbuild:vs_version=18

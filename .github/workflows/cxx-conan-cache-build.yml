@@ -1,0 +1,71 @@
+on:
+  workflow_call:
+    inputs:
+      setup:
+        type: string
+
+jobs:
+  cxx-conan-cache-build-linux:
+    name: Linux - ${{ matrix.tool }} - ${{ matrix.config }}
+
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/vasama/actions-ubuntu:v0_3
+
+    strategy:
+      fail-fast: false
+      matrix:
+        tool:
+        - clang
+        - gcc
+        config:
+        - Debug
+        - Release
+
+    steps:
+    - uses: actions/checkout@v7
+    - uses: vasama/actions/setup@main
+    - uses: vasama/actions/setup-conan-index@main
+
+    - name: Set up user project
+      if: ${{ inputs.setup }}
+      shell: pwsh
+      run: |
+        & '${{ inputs.setup }}'
+
+    - uses: vasama/actions/cxx-conan-cache-build@main
+      with:
+        tool: ${{ matrix.tool }}
+        config: ${{ matrix.config }}
+
+  cxx-conan-cache-build-windows:
+    name: Windows - ${{ matrix.tool }} - ${{ matrix.config }}
+
+    runs-on: windows-2025-vs2026
+
+    strategy:
+      fail-fast: false
+      matrix:
+        tool:
+        - clang
+        - msvc
+        config:
+        - Debug
+        - Release
+
+    steps:
+    - uses: actions/checkout@v7
+    - uses: vasama/actions/setup@main
+    - uses: vasama/actions/setup-conan-windows@main
+    - uses: vasama/actions/setup-conan-index@main
+
+    - name: Set up user project
+      if: ${{ inputs.setup }}
+      shell: pwsh
+      run: |
+        & '${{ inputs.setup }}'
+
+    - uses: vasama/actions/cxx-conan-cache-build@main
+      with:
+        tool: ${{ matrix.tool }}
+        config: ${{ matrix.config }}

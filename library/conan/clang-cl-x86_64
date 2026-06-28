@@ -1,0 +1,5 @@
+[conf]
+tools.build:cxxflags+=["/clang:-march=x86-64-v3"]
+tools.build:cxxflags+=["/clang:-march=nehalem"]
+tools.build:exelinkflags+=["clang_rt.builtins-x86_64.lib"]
+tools.build:sharedlinkflags+=["clang_rt.builtins-x86_64.lib"]

@@ -1,0 +1,19 @@
+on:
+  workflow_call: {}
+
+jobs:
+  trigger-conan-index:
+    runs-on: ubuntu-latest
+    name: "Trigger conan-index workflow"
+
+    steps:
+    - uses: vasama/actions/setup@main
+
+    - name: "Trigger conan-index workflow"
+      run: |
+        /tmp/vsm-actions/scripts/Trigger-ConanIndex.ps1 \
+          -GitHubSourceRepository ${{ github.repository }} \
+          -GitHubSourceReference '${{ github.ref }}' \
+          -GitHubIndexRepository '${{ github.repository_owner }}/conan-index' \
+          -GitHubIndexToken ${{ secrets.CONAN_INDEX_TOKEN }} \
+          -PackageBase ${{ github.event.repository.name }}

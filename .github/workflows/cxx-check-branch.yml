@@ -1,0 +1,88 @@
+on:
+  workflow_call:
+    inputs:
+      setup:
+        type: string
+      base_ref:
+        type: string
+        required: true
+
+jobs:
+  cxx-check-branch-linux:
+    name: Linux
+
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/vasama/actions-ubuntu:v0_3
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - uses: vasama/actions/setup@main
+    - uses: vasama/actions/setup-conan-index@main
+
+    - name: Set up user project
+      if: ${{ inputs.setup }}
+      shell: pwsh
+      run: |
+        & '${{ inputs.setup }}'
+
+    - uses: vasama/actions/cxx-conan-cache-restore@main
+      with:
+        tool: gcc
+        config: Release
+
+    - name: Check branch
+      shell: pwsh
+      run: |
+        git fetch '${{ github.repository }}' '${{ inputs.base_ref }}'
+        git log --pretty=oneline -n 100
+
+        $SetupScript = '${{ inputs.setup }}'
+        if ($SetupScript) {
+          $ENV:VSM_CXX_PROJECT_SETUP = $SetupScript
+        }
+
+        & "/$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" -BaseRef "${{ inputs.base_ref }}"
+
+  cxx-check-branch-windows:
+    name: Windows
+
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/vasama/actions-ubuntu:v0_3
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - uses: vasama/actions/setup@main
+    - uses: vasama/actions/setup-conan-windows@main
+    - uses: vasama/actions/setup-conan-index@main
+
+    - name: Set up user project
+      if: ${{ inputs.setup }}
+      shell: pwsh
+      run: |
+        & '${{ inputs.setup }}'
+
+    - uses: vasama/actions/cxx-conan-cache-restore@main
+      with:
+        tool: msvc
+        config: Release
+
+    - name: Check branch
+      shell: pwsh
+      run: |
+        git fetch '${{ inputs.base_ref }}'
+        git log --pretty=oneline -n 100
+
+        $SetupScript = '${{ inputs.setup }}'
+        if ($SetupScript) {
+          $ENV:VSM_CXX_PROJECT_SETUP = $SetupScript
+        }
+
+        & "/$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" -BaseRef "${{ inputs.base_ref }}"
