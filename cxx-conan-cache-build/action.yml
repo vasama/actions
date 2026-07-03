@@ -1,0 +1,51 @@
+name: 'vasama/actions: cxx-conan-cache-build'
+description: 'Build and cache C++ project dependencies using Conan'
+author: 'Lauri Vasama'
+
+inputs:
+  tool:
+    description: 'C++ compiler'
+    required: true
+  config:
+    description: 'C++ build configuration name'
+    required: true
+
+runs:
+  using: composite
+  steps:
+  - name: Conan package id
+    id: setup
+    shell: pwsh
+    run: |
+      $ConanHome = $ENV:CONAN_HOME
+      if (!$ConanHome) {
+        $ConanHome = "$HOME/.conan2"
+      }
+
+      $CachePath = Resolve-Path -ErrorAction Stop "$ConanHome/p"
+      $PackageId = & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProject.ps1" ${{ inputs.tool }} -Config ${{ inputs.config }} -Step conan-package-id
+
+      if ($ENV:RUNNER_DEBUG) {
+        Write-Output "PackageId='$PackageId'"
+      }
+
+      "cache_path=$CachePath" | Out-File -Append $ENV:GITHUB_OUTPUT
+      "package_id=$PackageId" | Out-File -Append $ENV:GITHUB_OUTPUT
+
+  - uses: actions/cache/restore@v5
+    id: check
+    with:
+      lookup-only: true
+      key: conan-${{ steps.setup.outputs.package_id }}
+
+  - if: steps.check.outputs.cache-hit
+    name: Conan install
+    shell: pwsh
+    run: |
+      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProject.ps1" ${{ inputs.tool }} -Config ${{ inputs.config }} -Step conan-install -ConanBuild missing
+
+  - if: steps.check.outputs.cache-hit
+    uses: actions/cache/save@v5
+    with:
+      path: ${{ steps.setup.outputs.cache_path }}
+      key: conan-${{ steps.setup.outputs.package_id }}

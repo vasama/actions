@@ -1,0 +1,89 @@
+on:
+  workflow_call:
+    inputs:
+      setup:
+        type: string
+
+jobs:
+  testing:
+    name: Linux - ${{ matrix.tool }} - ${{ matrix.config }}
+
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/vasama/actions-ubuntu:v0_3
+
+    strategy:
+      fail-fast: false
+      matrix:
+        tool:
+        - clang
+        - clang/tidy
+        - gcc
+        config:
+        - Debug
+        - Release
+        exclude:
+          - tool: clang/tidy
+            config: Release
+
+    steps:
+    - uses: actions/checkout@v7
+    - uses: vasama/actions/setup@main
+    - uses: vasama/actions/setup-conan-index@main
+
+    - name: Set up user project
+      if: ${{ inputs.setup }}
+      shell: pwsh
+      run: |
+        & '${{ inputs.setup }}'
+
+    - uses: vasama/actions/cxx-conan-cache-restore@main
+      with:
+        tool: ${{ matrix.tool }}
+        config: ${{ matrix.config }}
+
+    - uses: vasama/actions/cxx-test-project@main
+      with:
+        tool: ${{ matrix.tool }}
+        config: ${{ matrix.config }}
+
+  build-windows:
+    name: Windows - ${{ matrix.tool }} - ${{ matrix.config }}
+
+    runs-on: windows-2025-vs2026
+
+    strategy:
+      fail-fast: false
+      matrix:
+        tool:
+        - clang
+        - msvc
+        - msvc/intellisense
+        config:
+        - Debug
+        - Release
+        exclude:
+        - tool: msvc/intellisense
+          config: Release
+
+    steps:
+    - uses: actions/checkout@v7
+    - uses: vasama/actions/setup@main
+    - uses: vasama/actions/setup-conan-windows@main
+    - uses: vasama/actions/setup-conan-index@main
+
+    - name: Set up user project
+      if: ${{ inputs.setup }}
+      shell: pwsh
+      run: |
+        & '${{ inputs.setup }}'
+
+    - uses: vasama/actions/cxx-conan-cache-restore@main
+      with:
+        tool: ${{ matrix.tool }}
+        config: ${{ matrix.config }}
+
+    - uses: vasama/actions/cxx-test-project@main
+      with:
+        tool: ${{ matrix.tool }}
+        config: ${{ matrix.config }}

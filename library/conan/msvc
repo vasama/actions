@@ -1,0 +1,2 @@
+[conf]
+tools.build:cxxflags+=["/permissive-", "/Zc:preprocessor", "/Zc:__cplusplus"]

@@ -1,0 +1,21 @@
+name: 'vasama/actions: setup'
+description: 'Download and extract action script library'
+author: 'Lauri Vasama'
+
+runs:
+  using: composite
+  steps:
+  - name: Download library archive
+    shell: pwsh
+    run: |
+      Invoke-WebRequest -Uri 'https://github.com/vasama/actions/archive/refs/heads/main.zip' -OutFile "$ENV:RUNNER_TEMP/vsm-actions.zip"
+
+  - name: Extract library files
+    shell: pwsh
+    run: |
+      Expand-Archive -LiteralPath "$ENV:RUNNER_TEMP/vsm-actions.zip" -DestinationPath "$ENV:RUNNER_TEMP/vsm-actions-tmp"
+
+  - name: Copy library files (temporary for testing)
+    shell: pwsh
+    run: |
+      Copy-Item -Recurse -LiteralPath "$ENV:RUNNER_TEMP/vsm-actions-tmp/actions-main/library" -Destination "$ENV:RUNNER_TEMP/vsm-actions"

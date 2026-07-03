@@ -1,0 +1,59 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://vasama.org/package_info.schema.json",
+
+	"$defs": {
+		"package-type-pattern": {
+			"pattern": "((header|object|static|shared)?-library)|application"
+		},
+		"requirement-config-pattern": {
+			"pattern": "(header|source|test)-(library|application)"
+		}
+	},
+
+	"type": "object",
+	"properties": {
+		"package": {
+			"type": "string"
+		},
+		"version": {
+			"type": "string"
+		},
+		"authors": {
+			"type": "string"
+		},
+		"license": {
+			"type": "string"
+		},
+		"website": {
+			"type": "string"
+		},
+		"package_type": {
+			"type": "string",
+			"$ref": "#/$defs/package-type-pattern"
+		},
+		"requirements": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"package": {
+						"type": "string"
+					},
+					"version": {
+						"type": "string"
+					},
+					"configs": {
+						"type": ["string", "array"],
+						"$ref": "#/$defs/requirement-config-pattern",
+
+						"items": {
+							"type": "string",
+							"$ref": "#/$defs/requirement-config-pattern"
+						}
+					}
+				}
+			}
+		}
+	}
+}

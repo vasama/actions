@@ -1,0 +1,14 @@
+[settings]
+arch=x86_64
+compiler=clang
+compiler.cppstd=23
+compiler.runtime=dynamic
+compiler.runtime_version=v144
+compiler.version=22
+os=Windows
+
+[conf]
+tools.build:exelinkflags+=["clang_rt.builtins-x86_64.lib"]
+tools.build:sharedlinkflags+=["clang_rt.builtins-x86_64.lib"]
+tools.cmake.cmaketoolchain:generator=Visual Studio 18 2026
+tools.microsoft.msbuild:vs_version=18
