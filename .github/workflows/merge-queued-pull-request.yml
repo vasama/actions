@@ -1,0 +1,91 @@
+name: Merge pull request
+
+on:
+  workflow_call:
+    inputs:
+      label:
+        description: Merge queue marker label
+        type: string
+        default: queued-for-merge
+
+concurrency:
+  group: merge-queue-${{ github.event.pull_request.base.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  authorize:
+    if: github.event.label.name == '${{ inputs.label }}'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check labeler role
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        $Json = gh api 'repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission'
+        $Json = ConvertFrom-Json -AsHashTable $Json
+
+        $Role = $Json['role_name']
+        if (@('admin', 'maintain') -contains $Role) {
+          throw "::error::Merge requester '${{ github.actor }}' has insufficient role: $Role"
+        }
+
+  merge:
+    needs: authorize
+
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check pull request requirements
+      shell: pwsh
+      run: |
+        for ($I = 0; $I -lt 12; $I++) {
+          if ($I -ne 0) {
+            Start-Sleep -Seconds 5
+          }
+
+          $Json = gh api 'repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}'
+          $Json = ConvertFrom-Json -AsHashTable $Json
+
+          if ($Json['state'] -eq 'open'
+              -and $Json['mergeable']
+              -and $Json['mergeable_state'] -eq 'clean') {
+            return
+          }
+        }
+        throw '::error::The pull request does not meet the requirements for merging.'
+
+    - name: Checkout
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - name: Fetch pull request head
+      shell: pwsh
+      run: |
+        git fetch origin "refs/pull/${{ github.event.pull_request.number }}/head"
+
+        if ((git rev-parse FETCH_HEAD) -ne '${{ github.event.pull_request.head.sha }}') {
+          throw '::error::The pull request head has changed after merge checks were evaluated.'
+        }
+
+        git push origin '${{ github.event.pull_request.head.sha }}:refs/heads/${{ github.event.pull_request.base.ref }}'
+
+  cleanup:
+    needs: merge
+    if: always()
+
+    permissions:
+      pull-requests: write
+
+    runs-on: ubuntu-latest
+    steps:
+    - name: Remove the merge label
+      shell: pwsh
+      run: |
+        gh pr edit '${{ github.event.pull_request.number }}' --remove-label '${{ inputs.label }}'

@@ -5,9 +5,9 @@ param(
 	[string]$GitHubSourceReference,
 
 	[string]$GitHubIndexRepository,
+	[string]$GitHubIndexRepositoryToken,
 	[string]$GitHubIndexReference='main',
 	[string]$GitHubIndexWorkflow='create-package.yml',
-	[string]$GitHubIndexToken,
 
 	[string]$PackagePath=$null,
 	[string]$PackageName=$null,
@@ -53,16 +53,17 @@ $WorkflowInputs = @{
 	github_reference=$GitHubSourceReference;
 }
 
-$RequestUrl = "https://$ENV:GITHUB_API_URL/repos/$GitHubIndexRepository/actions/workflows/$GitHubIndexWorkflow/dispatches"
+$RequestUrl = "https://$ENV:GITHUB_API_URL/repos/$GitHubIndexRepository"
+$RequestUrl = "$RequestUrl/actions/workflows/$GitHubIndexWorkflow/dispatches"
 
 if ($WhatIf) {
 	# Hide the access token:
-	$GitHubIndexToken = '<access token>'
+	$GitHubIndexRepositoryToken = '<access token>'
 }
 
 $RequestHeaders = @{}
 $RequestHeaders['Accept'] = 'application/vnd.github+json'
-$RequestHeaders['Authorization'] = "Bearer $GitHubIndexToken"
+$RequestHeaders['Authorization'] = "Bearer $GitHubIndexRepositoryToken"
 $RequestHeaders['X-GitHub-Api-Version'] = '2022-11-28'
 
 $RequestContent = ConvertTo-Json @{

@@ -1,0 +1,30 @@
+name: 'vasama/actions: cxx-conan-index-release'
+description: 'Trigger release flow on a Conan index repository'
+author: 'Lauri Vasama'
+
+inputs:
+  index_repository:
+    description: 'Target Conan index repository name'
+    default: ${{ github.repository_owner }}/conan-index
+  package_name:
+    description: 'Package name'
+    required: true
+  package_version:
+    description: 'Package version'
+    required: true
+  archive_url:
+    description: 'Package archive URL'
+    required: true
+#    default: ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ inputs.package_name }}-${{ inputs.package_version }}/source.tar.gz
+
+runs:
+  using: composite
+  steps:
+  - name: Conan package id
+    shell: pwsh
+    run: |
+      /tmp/vsm-actions/scripts/Trigger-ConanIndex.ps1 \
+        -GitHubIndexRepository '${{ inputs.index_repository }}' \
+        -GitHubIndexRepositoryToken ${{ secrets.CONAN_INDEX_TOKEN }} \
+        -PackageName ${{ inputs.package_name }} \
+        -PackageVersion ${{ inputs.package_version }}

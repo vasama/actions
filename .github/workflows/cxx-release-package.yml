@@ -1,0 +1,27 @@
+on:
+  workflow_call:
+    inputs:
+      package_path:
+        type: string
+        required: true
+      index_repository:
+        description: 'Target Conan index repository name'
+        type: string
+        default: ${{ github.repository_owner }}/conan-index
+
+jobs:
+  trigger-conan-index:
+    runs-on: ubuntu-latest
+    name: "Trigger conan-index workflow"
+
+    steps:
+    - uses: vasama/actions/setup@main
+
+    - uses: vasama/actions/cxx-upload-package-archive@main
+      with:
+        archive_name: source.tar.gz
+        package_path: ${{ inputs.package_path }}
+
+    - uses: vasama/actions/cxx-conan-index-release@main
+      with:
+        index_repository: ${{ inputs.index_repository }}

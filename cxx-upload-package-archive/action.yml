@@ -1,0 +1,52 @@
+name: 'vasama/actions: cxx-upload-package-archive'
+description: 'Upload C++ package archive'
+author: 'Lauri Vasama'
+
+inputs:
+  release_tag:
+    required: true
+  archive_name:
+    description: 'Name of the archive file'
+    required: true
+  package_path:
+    description: 'Path for the '
+    required: true
+
+outputs:
+  archive_hash:
+    description: 'Hash of the archive file'
+    value: ${{ steps.archive.outputs.archive_hash }}
+
+runs:
+  using: composite
+  steps:
+  - name: Create package archive
+    id: archive
+    shell: pwsh
+    run: |
+      $ArchivePath = "$ENV:RUNNER_TEMP/$([System.IO.Path]::GetRandomFileName())"
+      New-Item -ItemType Directory -Force -Path $ArchivePath | Out-Null
+
+      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/Conan/make_package_archive.py" '${{ inputs.package_path }}' $ArchivePath
+      $ArchiveHash = (Get-FileHash -Algorithm SHA256 $ArchivePath).Hash.ToLowerInvariant()
+
+      "archive_path=$ArchivePath" | Out-File -Append $ENV:GITHUB_OUTPUT
+      "archive_hash=$ArchiveHash" | Out-File -Append $ENV:GITHUB_OUTPUT
+
+  - name: Upload package archive
+    shell: pwsh
+    run: |
+      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Upload-ReleaseAsset.ps1" \
+        -GitHubRepository '${{ inputs.repository }}' \
+        -GithubRepositoryToken '${{ secrets.REPOSITORY_TOKEN }}' \
+        -AssetName '${{ inputs.archive_name }}' \
+        -AssetPath '${{ steps.archive.outputs.archive_path }}'
+
+  - name: Trigger Conan index
+    shell: pwsh
+    run: |
+      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Trigger-ConanIndex.ps1" \
+        -GitHubIndexRepository '${{ inputs.index_repository }}' \
+        -GitHubIndexRepositoryToken ${{ secrets.CONAN_INDEX_TOKEN }} \
+        -PackageName ${{ inputs.package_name }} \
+        -PackageVersion ${{ inputs.package_version }}
