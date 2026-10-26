@@ -10,7 +10,7 @@ jobs:
 
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/vasama/actions-ubuntu:v0_4
+      image: ghcr.io/vasama/actions-ubuntu:v0_5
 
     strategy:
       fail-fast: false
