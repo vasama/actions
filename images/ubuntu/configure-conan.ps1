@@ -11,6 +11,8 @@ param(
 	[string]$LLVM
 )
 
+$PSNativeCommandUseErrorActionPreference = $true
+
 function Generate-HostProfile() {
 	Write-Output '[platform_tool_requires]'
 
@@ -48,11 +50,11 @@ if ($LastExitCode -ne 0) {
 	exit $LastExitCode
 }
 
-if (!(Test-Path -PathType Container $CONAN_HOME)) {
-	throw "Conan configuration directory was not created as expected."
+if (!(Test-Path -PathType Container $env:CONAN_HOME)) {
+	throw 'Conan configuration directory was not created as expected.'
 }
 
-$ProfilesDirectory = "$CONAN_HOME/profiles"
+$ProfilesDirectory = "$env:CONAN_HOME/profiles"
 if (!(Test-Path -PathType Container $ProfilesDirectory)) {
 	New-Item -ItemType Directory $ProfilesDirectory
 }
