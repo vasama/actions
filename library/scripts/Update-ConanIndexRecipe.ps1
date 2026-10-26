@@ -60,7 +60,7 @@ if (!$Step -or $Step -eq 'update-recipe') {
 		New-Item -Path $RecipeDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
 
 		# Update recipe conandata.yml:
-		python3 "$PSScriptRoot/Python/Conan/update-conandata.py" `
+		python3 "$PSScriptRoot/Python/Conan/update_conandata.py" `
 			--root $SourceDir `
 			--path $PackagePath `
 			--name $PackageName `
@@ -70,7 +70,7 @@ if (!$Step -or $Step -eq 'update-recipe') {
 			$Conandata
 
 		# Copy the latest conanfile.py to the recipe directory:
-		Copy-Item -Path "$PSScriptRoot/../conan-index/conanfile-v1.py" -Destination $Conanfile
+		Copy-Item -Path "$PSScriptRoot/../conan-index/conanfile_v1.py" -Destination $Conanfile
 	}
 	finally
 	{

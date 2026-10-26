@@ -5,7 +5,7 @@ import os
 import yaml
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(prog='get-recipe-directory')
+	parser = argparse.ArgumentParser()
 
 	parser.add_argument("--root")
 	parser.add_argument("--name")

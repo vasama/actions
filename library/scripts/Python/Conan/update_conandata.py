@@ -111,7 +111,7 @@ def get_ver_data(conandata, version):
 	all_data = dict(conandata.get("common_attributes", {}))
 	ver_data = conandata.get("attributes", {}).get(version, {})
 
-	for key, value in ver_data:
+	for key, value in ver_data.items():
 		all_value = all_data.get(key)
 
 		if all_value is None:
@@ -121,7 +121,7 @@ def get_ver_data(conandata, version):
 		if type(all_value) != type(value):
 			raise RuntimeError(f"Mismatched type for '{key}' in version attributes")
 
-		all_data[key] = list(set(all_data[key]).union(value)) if value is list else value
+		all_data[key] = list(set(all_data[key]).union(value)) if isinstance(value, list) else value
 
 	return all_data
 
@@ -136,9 +136,9 @@ def merge_ver_data(ver_data):
 	ver_keys_set.sort(key=lambda x: attribute_sort[x])
 
 	for key in ver_keys_set:
-		values = set(deepfreeze(x.get(key)) for x in ver_data)
+		frozen_values = set(deepfreeze(x.get(key)) for x in ver_data)
 
-		if len(values) == 1:
+		if len(frozen_values) == 1:
 			shared_value = ver_data[0][key]
 			if shared_value is not None:
 				common_attributes[key] = shared_value
@@ -150,17 +150,13 @@ def merge_ver_data(ver_data):
 				raise RuntimeError(f"Mismatched type for '{key}' in version attributes")
 
 			if types.pop() is list:
-				shared_list = set.intersection(x.get(key, []) for x in ver_data)
+				shared_list = set.intersection(*(set(x[key]) for x in ver_data))
 
 				if len(shared_list) != 0:
 					common_attributes[key] = list(shared_list)
 
 					for ver in ver_data:
-						ver_list = ver.get(key)
-
-						if ver_list is None:
-							continue
-
+						ver_list = ver[key]
 						ver_list = set(ver_list).difference(shared_list)
 
 						if len(ver_list) == 0: del ver[key]
@@ -174,7 +170,7 @@ def merge_ver_data(ver_data):
 
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(prog='update-conandata')
+	parser = argparse.ArgumentParser()
 
 	parser.add_argument('--root')
 	parser.add_argument('--path')

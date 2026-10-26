@@ -14,9 +14,7 @@ param(
 $PSNativeCommandUseErrorActionPreference = $true
 
 if (!$Step -or $Step -eq 'conan-export') {
-	$FindRecipeScript = "$PSScriptRoot/Python/Conan/find-conan-recipe.py"
-
-	$RecipeDir = python3 "$PSScriptRoot/Python/Conan/get-recipe-directory.py" `
+	$RecipeDir = python3 "$PSScriptRoot/Python/Conan/get_recipe_directory.py" `
 		--root . `
 		--name $PackageName `
 		--version $PackageVersion

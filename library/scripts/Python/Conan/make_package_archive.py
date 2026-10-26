@@ -86,7 +86,7 @@ def add_file_from_string(tar, name, data, mode=0o644):
 		tar.addfile(info, file)
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(prog='make-package-archive')
+	parser = argparse.ArgumentParser()
 
 	parser.add_argument('--recipe-path')
 	parser.add_argument('--archive-path')

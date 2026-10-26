@@ -10,7 +10,7 @@ import yaml
 
 class Conandata:
 	def __init__(self, conanfile):
-		self._all_data = conanfile.conan_data["common_attributes"]
+		self._all_data = conanfile.conan_data.get("common_attributes", {})
 		self._ver_data = conanfile.conan_data.get("attributes", {}).get(conanfile.version, {})
 
 	def get(self, attr, default=None):
@@ -54,8 +54,12 @@ class Package(ConanFile):
 		if sources is None or not isinstance(sources, dict):
 			raise ConanException("conandata.yml sources is not a mapping")
 
+		version_sources = sources.get(version)
+		if version_sources is None or not isinstance(version_sources, dict):
+			raise ConanException(f"conandata.yml sources for version {version} is not a mapping")
+
 		# Remove unused version sources:
-		conandata["sources"] = { version: sources[version] }
+		conandata["sources"] = { version: version_sources }
 
 		conandata = yaml.safe_dump(conandata, default_flow_style=False, sort_keys=False)
 
@@ -103,8 +107,7 @@ class Package(ConanFile):
 
 		relative_path = self.conan_data.get("path")
 		if relative_path is not None:
-			source_path = os.path.join(self.source_folder, relative_path)
-			configure_args["build_script_folder"] = source_path
+			configure_args["build_script_folder"] = relative_path
 
 		cmake = CMake(self)
 		cmake.configure(**configure_args)
@@ -123,7 +126,7 @@ class Package(ConanFile):
 				f'set(VSM_PKG_{self.name}_DIR "${{{self.name}_PACKAGE_FOLDER_{config}}}")\n',
 				f'include(${{CMAKE_CURRENT_LIST_DIR}}/{self.name}-setup.cmake)\n',
 			])
-			save(conanfile, os.path.join(self.package_folder, f"{conanfile.name}-setup-conan.cmake"), setup_script)
+			save(self, os.path.join(self.package_folder, f"cmake/{self.name}-setup-conan.cmake"), setup_script)
 
 	def package_info(self):
 		package_type = str(self.package_type)
