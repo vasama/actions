@@ -13,7 +13,7 @@ jobs:
 
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/vasama/actions-ubuntu:v0_3
+      image: ghcr.io/vasama/actions-ubuntu:v0_4
 
     steps:
     - uses: vasama/actions/setup@main
@@ -38,7 +38,7 @@ jobs:
 
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/vasama/actions-ubuntu:v0_3
+      image: ghcr.io/vasama/actions-ubuntu:v0_4
 
     steps:
     - uses: actions/checkout@v7
