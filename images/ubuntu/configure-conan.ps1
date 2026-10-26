@@ -16,7 +16,10 @@ $PSNativeCommandUseErrorActionPreference = $true
 function Generate-HostProfile() {
 	Write-Output '[platform_tool_requires]'
 
-	"$(cmake --version)" -match 'cmake version (\d\.\d\.\d)'
+	if (!("$(cmake --version)" -match 'cmake version (\d+\.\d+\.\d+)\b')) {
+		throw 'Unable to detect CMake version'
+	}
+
 	Write-Output "cmake/$($Matches[1])"
 }
 
