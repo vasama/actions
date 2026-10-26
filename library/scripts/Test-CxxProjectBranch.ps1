@@ -9,6 +9,7 @@ param(
 $PSNativeCommandUseErrorActionPreference = $true
 
 function Test-GitBranch($BranchName) {
+	$PSNativeCommandUseErrorActionPreference = $false
 	git show-ref --verify --quiet "refs/heads/$BranchName"
 	return $LastExitCode -eq 0
 }

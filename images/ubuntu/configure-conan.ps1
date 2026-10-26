@@ -49,10 +49,6 @@ function Generate-DefaultProfile($Compiler, $Config) {
 # Run Conan for the first time to create configuration directory.
 conan | Out-Null
 
-if ($LastExitCode -ne 0) {
-	exit $LastExitCode
-}
-
 if (!(Test-Path -PathType Container $env:CONAN_HOME)) {
 	throw 'Conan configuration directory was not created as expected.'
 }
