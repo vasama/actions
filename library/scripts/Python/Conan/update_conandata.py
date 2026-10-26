@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import pathlib
 import sys
 import yaml
 
@@ -22,19 +23,7 @@ attribute_sort["requirements"] = len(attribute_sort)
 
 
 def split_path(path):
-	parts = []
-
-	while True:
-		path, tail = os.path.split(path)
-
-		if tail:
-			parts.append(tail)
-		else:
-			if path:
-				parts.append(path)
-
-			parts.reverse()
-			return parts
+	return list(pathlib.PurePath(path).parts)
 
 def read_package_json(repository_path, component_path):
 	package = dict()

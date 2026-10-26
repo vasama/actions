@@ -97,7 +97,7 @@ if __name__ == "__main__":
 	package_info = read_package_info_json(args.recipe_path)
 	tracked_files = get_tracked_files(args.recipe_path, "HEAD")
 
-	open_mode = f"{'w' if args.overwrite else 'r'}:gz"
+	open_mode = f"{'w' if args.overwrite else 'x'}:gz"
 	with tarfile.open(args.archive_path, open_mode, dereference=True) as tar:
 		for path, mode in tracked_files:
 			if path == "package_info.json":
@@ -106,7 +106,7 @@ if __name__ == "__main__":
 			with open(os.path.join(args.recipe_path, path), 'rb') as file:
 				info = tarfile.TarInfo(path)
 				info.size = get_file_size(file)
-				info.mode = mode and 0o777
+				info.mode = int(mode, 8) & 0o777
 
 				tar.addfile(info, file)
 

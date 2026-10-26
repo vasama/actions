@@ -54,6 +54,7 @@ if __name__ == "__main__":
 	package_info = read_package_info(package_path)
 
 	# The combined package_info.json does not require inheritance.
-	del package_info["inherit"]
+	if "inherit" in package_info:
+		del package_info["inherit"]
 
 	json.dump(package_info, sys.stdout, indent=2)
