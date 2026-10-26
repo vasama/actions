@@ -26,3 +26,24 @@ jobs:
         push: true
         tags: |
           ghcr.io/${{ vars.GHCR_USERNAME }}/actions-ubuntu:${{ github.ref_name }}
+
+  library:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v7
+
+    - name: Create library archive
+      shell: bash
+      working-directory: library
+      run: |
+        tar -czf "$RUNNER_TEMP/library.tar.gz" .
+
+    - name: Upload library archive
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh release upload '${{ github.ref_name }}' "$ENV:RUNNER_TEMP/library.tar.gz"
