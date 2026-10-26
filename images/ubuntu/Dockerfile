@@ -10,6 +10,7 @@ ARG USER_NAME=github
 
 # Install tools needed by install scripts:
 RUN apt-get update && apt-get install --no-install-recommends -y \
+	ca-certificates \
 	wget \
 	&& rm -rf /var/lib/apt/lists/*
 

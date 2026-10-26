@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-set -eux
+set -euxo pipefail
 
 USER_ID="$1"
 USER_NAME="$2"

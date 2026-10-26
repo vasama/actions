@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-set -eux
+set -euxo pipefail
 
 cd /tmp
 
