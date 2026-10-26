@@ -9,8 +9,9 @@ ARG USER_ID=1001
 ARG USER_NAME=github
 
 # Install tools needed by install scripts:
-RUN apt-get update && apt-get install -y \
-	wget
+RUN apt-get update && apt-get install --no-install-recommends -y \
+	wget \
+	&& rm -rf /var/lib/apt/lists/*
 
 # Install Kitware APT repo:
 # RUN wget -O - https://apt.kitware.com/kitware-archive.sh | bash -s
@@ -24,24 +25,26 @@ RUN --mount=type=bind,source=images/ubuntu/add-microsoft-apt-repository.sh,targe
 	/tmp/run.sh
 
 # Install miscellaneous packages:
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install --no-install-recommends -y \
 	cmake \
 	git \
 	ninja-build \
 	pipx \
-	powershell
+	powershell \
+	&& rm -rf /var/lib/apt/lists/*
 
 # Install C++ compilers:
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install --no-install-recommends -y \
 	clang-$LLVM_VERSION \
 	clang-format-$LLVM_VERSION \
 	clang-tidy-$LLVM_VERSION \
 	clang++-$LLVM_VERSION \
 	g++-$GCC_VERSION \
-	gcc-$GCC_VERSION
+	gcc-$GCC_VERSION \
+	&& rm -rf /var/lib/apt/lists/*
 
 # Install Python tools:
-RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install \
+RUN PIP_NO_CACHE_DIR=1 PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install \
 	conan
 
 # Configure default compilers:
