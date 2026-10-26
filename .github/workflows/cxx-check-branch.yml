@@ -36,9 +36,7 @@ jobs:
   cxx-check-branch-windows:
     name: Windows
 
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/vasama/actions-ubuntu:v0_5
+    runs-on: windows-2025-vs2026
 
     steps:
     - uses: actions/checkout@v7
