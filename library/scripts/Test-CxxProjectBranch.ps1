@@ -6,7 +6,7 @@ param(
 	[switch]$WhatIf=$false
 )
 
-. "$PSScriptRoot/Utilities/Invoke-NativeCommand.ps1"
+$PSNativeCommandUseErrorActionPreference = $true
 
 function Test-GitBranch($BranchName) {
 	git show-ref --verify --quiet "refs/heads/$BranchName"
@@ -65,6 +65,6 @@ if ($TestCurrentCommit) {
 	if ($WhatIf) {
 		Write-Output "git rebase $BaseRef --exec `"$ExecScript`""
 	} else {
-		Invoke-NativeCommand git rebase $BaseRef --exec $ExecScript
+		git rebase $BaseRef --exec $ExecScript
 	}
 }

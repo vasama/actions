@@ -11,15 +11,12 @@ param(
 	[string]$Step=$null
 )
 
-function Invoke-NativeCommand($Command) {
-	& $Command $Args
-	if (!$?) { exit 1 }
-}
+$PSNativeCommandUseErrorActionPreference = $true
 
 if (!$Step -or $Step -eq 'conan-export') {
 	$FindRecipeScript = "$PSScriptRoot/find-conan-recipe.py"
 
-	$RecipeDir = Invoke-NativeCommand python3 "$PSScriptRoot/get-recipe-directory.py" `
+	$RecipeDir = python3 "$PSScriptRoot/get-recipe-directory.py" `
 		--root . `
 		--name $PackageName `
 		--version $PackageVersion
@@ -36,7 +33,7 @@ if (!$Step -or $Step -eq 'conan-export') {
 		$ConanArgs.Add($PackageChannel)
 	}
 
-	Invoke-NativeCommand conan export --version $PackageVersion @ConanArgs $RecipeDir
+	conan export --version $PackageVersion @ConanArgs $RecipeDir
 }
 
 if (!$Step -or $Step -eq 'conan-upload') {
@@ -49,5 +46,5 @@ if (!$Step -or $Step -eq 'conan-upload') {
 		}
 	}
 
-	Invoke-NativeCommand conan upload --remote $Remote --check $Reference
+	conan upload --remote $Remote --check $Reference
 }

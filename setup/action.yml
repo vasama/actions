@@ -15,6 +15,7 @@ runs:
     run: |
       Expand-Archive -LiteralPath "$ENV:RUNNER_TEMP/vsm-actions.zip" -DestinationPath "$ENV:RUNNER_TEMP/vsm-actions-tmp"
 
+  # TODO: Upload a library archive in the release action, download that and extract directly.
   - name: Copy library files (temporary for testing)
     shell: pwsh
     run: |

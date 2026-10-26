@@ -12,7 +12,7 @@ param(
 	[string]$Step=$null
 )
 
-. "$PSScriptRoot/Utilities/Invoke-NativeCommand.ps1"
+$PSNativeCommandUseErrorActionPreference = $true
 
 $RecipeDir = "./recipes/$PackageName/v1"
 
@@ -60,7 +60,7 @@ if (!$Step -or $Step -eq 'update-recipe') {
 		New-Item -Path $RecipeDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
 
 		# Update recipe conandata.yml:
-		Invoke-NativeCommand python3 "$PSScriptRoot/update-conandata.py" `
+		python3 "$PSScriptRoot/update-conandata.py" `
 			--root $SourceDir `
 			--path $PackagePath `
 			--name $PackageName `
@@ -79,16 +79,16 @@ if (!$Step -or $Step -eq 'update-recipe') {
 }
 
 if (!$Step -or $Step -eq 'create-package') {
-	Invoke-NativeCommand conan create --version $PackageVersion --build missing $RecipeDir
+	conan create --version $PackageVersion --build missing $RecipeDir
 }
 
 if (!$Step -or $Step -eq 'create-commit') {
-	Invoke-NativeCommand git add $RecipeDir
-	Invoke-NativeCommand git commit `
+	git add $RecipeDir
+	git commit `
 		--message "Add $PackageName/$PackageVersion" `
 		--message "This commit was created by an automated process."
 }
 
 if (!$Step -or $Step -eq 'push-changes') {
-	Invoke-NativeCommand git push
+	git push
 }

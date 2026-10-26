@@ -11,7 +11,16 @@ param(
 	[string]$LLVM
 )
 
+function Generate-HostProfile() {
+	Write-Output '[platform_tool_requires]'
+
+	"$(cmake --version)" -match 'cmake version (\d\.\d\.\d)'
+	Write-Output "cmake/$($Matches[1])"
+}
+
 function Generate-CompilerProfile($Compiler, $CXXCompiler, $Version) {
+	Write-Output "include(vsm-host)"
+
 	Write-Output '[settings]'
 	Write-Output "arch=$Architecture"
 	Write-Output "compiler=$Compiler"
@@ -47,6 +56,7 @@ if (!(Test-Path -PathType Container $ProfilesDirectory)) {
 	New-Item -ItemType Directory $ProfilesDirectory
 }
 
+Generate-HostProfile                             | Out-File "$ProfilesDirectory/vsm-host"
 Generate-CompilerProfile 'gcc'   'g++'     $GCC  | Out-File "$ProfilesDirectory/vsm-gcc"
 Generate-CompilerProfile 'clang' 'clang++' $LLVM | Out-File "$ProfilesDirectory/vsm-clang"
 Generate-DefaultProfile  'gcc'   'Debug'         | Out-File "$ProfilesDirectory/default"

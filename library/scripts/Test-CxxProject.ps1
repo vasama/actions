@@ -11,7 +11,7 @@ param(
 	[switch]$WhatIf=$false
 )
 
-. "$PSScriptRoot/Utilities/Invoke-NativeCommand.ps1"
+$PSNativeCommandUseErrorActionPreference = $true
 
 $Compiler = $null
 $Analysis = $null
@@ -76,6 +76,8 @@ if ($IsWindows) {
 }
 
 $ConanArguments = @($ConanSettings | ForEach-Object { "-s=$_" })
+
+$ConanArguments += @("-pr=vsm-host")
 $ConanArguments += @("-pr=vsm-${Compiler}")
 
 $ConanProfileRoot = Resolve-Path -ErrorAction Stop "$PSScriptRoot/../conan"
@@ -112,7 +114,7 @@ $CMakePreset = "conan-$ConanPreset"
 $BuildDirectory = "./build/$ConanPreset"
 
 if ($Step -eq 'conan-package-id') {
-	$ConanGraphInfo = Invoke-NativeCommand conan graph info --format json @ConanArguments .
+	$ConanGraphInfo = conan graph info --format json @ConanArguments .
 	$ConanGraphInfo = (ConvertFrom-Json -AsHashtable "$ConanGraphInfo")['graph']
 
 	$ConanGraphRoot = $ConanGraphInfo['root']
@@ -136,7 +138,7 @@ if (!$Step -or $Step -eq 'conan-install') {
 	if ($WhatIf) {
 		Write-Output "conan install $($ConanArguments | ForEach-Object { "'$_'" } | Join-String -Separator ' ') ."
 	} else {
-		Invoke-NativeCommand conan install @ConanArguments .
+		conan install @ConanArguments .
 	}
 }
 
@@ -144,7 +146,7 @@ if (!$Step -or $Step -eq 'cmake-configure') {
 	if ($WhatIf) {
 		Write-Output "cmake --preset $CMakePreset"
 	} else {
-		Invoke-NativeCommand cmake --preset $CMakePreset
+		cmake --preset $CMakePreset
 	}
 }
 
@@ -152,7 +154,7 @@ if ((!$Step -and !$Analysis) -or $Step -eq 'cmake-build') {
 	if ($WhatIf) {
 		Write-Output "cmake --build --preset $CMakePreset"
 	} else {
-		Invoke-NativeCommand cmake --build --preset $CMakePreset
+		cmake --build --preset $CMakePreset
 	}
 }
 
@@ -160,7 +162,7 @@ if ((!$Step -and !$Analysis) -or $Step -eq 'ctest') {
 	if ($WhatIf) {
 		Write-Output "ctest --preset $CMakePreset --output-on-failure"
 	} else {
-		Invoke-NativeCommand ctest --preset $CMakePreset --output-on-failure
+		ctest --preset $CMakePreset --output-on-failure
 	}
 }
 
