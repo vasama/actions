@@ -6,7 +6,7 @@ on:
       label:
         description: Merge queue marker label
         type: string
-        default: queued-for-merge
+        default: merge
       timeout:
         description: Maximum time in minutes to wait for the pull request to become mergeable.
         type: number
