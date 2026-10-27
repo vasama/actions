@@ -1,0 +1,37 @@
+name: 'vasama/actions: check-branch-history'
+description: 'Check that the checked out branch is based on the current head of the base ref and has linear history'
+author: 'Lauri Vasama'
+
+inputs:
+  base_ref:
+    description: 'Base ref the branch must be based on, e.g. origin/main'
+    required: true
+
+runs:
+  using: composite
+  steps:
+  - name: Check that the branch is up to date and linear
+    shell: pwsh
+    env:
+      BASE_REF: ${{ inputs.base_ref }}
+    run: |
+      git merge-base --is-ancestor $ENV:BASE_REF HEAD
+
+      switch ($LastExitCode) {
+        0 {}
+        1 {
+          Write-Output "::error::The branch is not based on the current head of $ENV:BASE_REF. Rebase it and try again."
+          exit 1
+        }
+        default { exit $LastExitCode }
+      }
+
+      $MergeCount = git rev-list --merges --count "$ENV:BASE_REF..HEAD"
+      if ($LastExitCode -ne 0) {
+        exit $LastExitCode
+      }
+
+      if ([int]$MergeCount -ne 0) {
+        Write-Output "::error::The branch contains merge commits. Rebase it onto $ENV:BASE_REF to make its history linear."
+        exit 1
+      }

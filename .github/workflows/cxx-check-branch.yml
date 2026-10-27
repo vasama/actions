@@ -4,8 +4,16 @@ on:
       setup:
         type: string
       base_ref:
+        description: Base ref to check the branch against. Defaults to the pull request base branch.
         type: string
-        required: true
+      timeout:
+        description: Timeout in minutes for each job.
+        type: number
+        default: 60
+
+env:
+  BASE_REF: ${{ inputs.base_ref || format('origin/{0}', github.base_ref) }}
+  VSM_CXX_PROJECT_SETUP: ${{ inputs.setup }}
 
 jobs:
   cxx-check-branch-linux:
@@ -15,33 +23,42 @@ jobs:
     container:
       image: ghcr.io/vasama/actions-ubuntu:v0_5
 
+    timeout-minutes: ${{ inputs.timeout }}
+
     steps:
     - uses: vasama/actions/setup@main
     - uses: vasama/actions/setup-conan-index@main
 
     - uses: actions/checkout@v7
       with:
+        ref: ${{ github.event.pull_request.head.sha }}
         fetch-depth: 0
+
+    - uses: vasama/actions/check-branch-history@main
+      with:
+        base_ref: ${{ env.BASE_REF }}
 
     - name: Check branch
       shell: pwsh
       run: |
-        $SetupScript = '${{ inputs.setup }}'
-        if ($SetupScript) {
-          $ENV:VSM_CXX_PROJECT_SETUP = $SetupScript
-        }
-
-        & "/$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" -BaseRef "${{ inputs.base_ref }}"
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" -BaseRef $ENV:BASE_REF
 
   cxx-check-branch-windows:
     name: Windows
 
     runs-on: windows-2025-vs2026
 
+    timeout-minutes: ${{ inputs.timeout }}
+
     steps:
     - uses: actions/checkout@v7
       with:
+        ref: ${{ github.event.pull_request.head.sha }}
         fetch-depth: 0
+
+    - uses: vasama/actions/check-branch-history@main
+      with:
+        base_ref: ${{ env.BASE_REF }}
 
     - uses: vasama/actions/setup@main
     - uses: vasama/actions/setup-conan-windows@main
@@ -50,9 +67,4 @@ jobs:
     - name: Check branch
       shell: pwsh
       run: |
-        $SetupScript = '${{ inputs.setup }}'
-        if ($SetupScript) {
-          $ENV:VSM_CXX_PROJECT_SETUP = $SetupScript
-        }
-
-        & "/$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" -BaseRef "${{ inputs.base_ref }}"
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" -BaseRef $ENV:BASE_REF
