@@ -53,6 +53,8 @@
 						"type": ["string", "array"],
 						"$ref": "#/$defs/requirement-config-pattern",
 
+						"minItems": 1,
+						"uniqueItems": true,
 						"items": {
 							"type": "string",
 							"$ref": "#/$defs/requirement-config-pattern"
