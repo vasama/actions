@@ -28,6 +28,9 @@
 		"license": {
 			"type": "string"
 		},
+		"description": {
+			"type": "string"
+		},
 		"website": {
 			"type": "string"
 		},
