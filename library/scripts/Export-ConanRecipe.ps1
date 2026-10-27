@@ -11,6 +11,7 @@ param(
 	[string]$Step=$null
 )
 
+$ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 if (!$Step -or $Step -eq 'conan-export') {

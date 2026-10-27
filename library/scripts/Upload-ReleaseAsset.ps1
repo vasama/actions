@@ -10,6 +10,8 @@ param(
 	[switch]$WhatIf=$false
 )
 
+$ErrorActionPreference = 'Stop'
+
 $RequestUrl = "https://$ENV:GITHUB_API_URL/repos/$GitHubRepository"
 $RequestUrl = "$RequestUrl/releases/$PackageName-$PackageVersion/assets"
 $RequestUrl = "$RequestUrl?name=$AssetName"

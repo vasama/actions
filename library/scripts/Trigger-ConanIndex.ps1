@@ -17,6 +17,8 @@ param(
 	[switch]$WhatIf=$false
 )
 
+$ErrorActionPreference = 'Stop'
+
 if ($PackageName -and $PackageBase) {
 	throw 'PackageBase may not be specified together with PackageName'
 }

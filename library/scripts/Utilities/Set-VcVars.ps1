@@ -4,6 +4,7 @@ if (!$IsWindows) {
 	throw 'Visual C is only available on Windows.'
 }
 
+$ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 function Find-VisualStudio() {

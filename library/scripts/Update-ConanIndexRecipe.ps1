@@ -12,6 +12,7 @@ param(
 	[string]$Step=$null
 )
 
+$ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 $RecipeDir = "./recipes/$PackageName/v1"

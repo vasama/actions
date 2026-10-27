@@ -11,6 +11,7 @@ param(
 	[switch]$WhatIf=$false
 )
 
+$ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 $Compiler = $null

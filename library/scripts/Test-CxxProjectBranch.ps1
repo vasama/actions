@@ -6,6 +6,7 @@ param(
 	[switch]$WhatIf=$false
 )
 
+$ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 function Test-GitBranch($BranchName) {
