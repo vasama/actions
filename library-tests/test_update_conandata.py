@@ -4,7 +4,7 @@ import pytest
 import yaml
 
 from conftest import write_package_info
-from update_conandata import get_ver_data, make_package_conandata, merge_ver_data, read_package_json, split_path
+from update_conandata import get_ver_data, make_package_conandata, merge_ver_data, read_package_json
 
 
 REQ_A = { "reference": "a/1.0" }
@@ -12,36 +12,14 @@ REQ_B = { "reference": "b/1.0" }
 REQ_C = { "reference": "c/1.0", "arguments": { "test": True } }
 
 
-@pytest.mark.parametrize("path, parts", [
-	("a", ["a"]),
-	("a/b/c", ["a", "b", "c"]),
-	("/a/b", ["/", "a", "b"]),
-	("a/b/", ["a", "b"]),
-	("a//b", ["a", "b"]),
-	("", []),
-])
-def test_split_path(path, parts):
-	assert split_path(path) == parts
+def test_read_package_json(tmp_path):
+	write_package_info(tmp_path, { "license": "MIT", "requirements": [1] })
 
-
-def test_read_package_json_merges_from_repository_root(tmp_path):
-	write_package_info(tmp_path, { "license": "MIT", "description": "root" })
-	write_package_info(tmp_path / "a" / "b", { "description": "b" })
-
-	assert read_package_json(str(tmp_path), "a/b") == { "license": "MIT", "description": "b" }
-
-def test_read_package_json_concatenates_lists(tmp_path):
-	write_package_info(tmp_path, { "requirements": [1] })
-	write_package_info(tmp_path / "a", { "requirements": [2] })
-	write_package_info(tmp_path / "a" / "b", { "requirements": [3] })
-
-	assert read_package_json(str(tmp_path), "a/b")["requirements"] == [1, 2, 3]
+	assert read_package_json(str(tmp_path)) == { "license": "MIT", "requirements": [1] }
 
 def test_read_package_json_missing_raises(tmp_path):
-	(tmp_path / "a").mkdir()
-
 	with pytest.raises(RuntimeError, match="package_info.json not found"):
-		read_package_json(str(tmp_path), "a")
+		read_package_json(str(tmp_path))
 
 
 def test_make_package_conandata_maps_attributes():
@@ -236,16 +214,14 @@ def test_merge_ver_data_round_trips_through_get_ver_data(ver_data):
 
 
 @pytest.fixture
-def package_repository(tmp_path):
-	repo = tmp_path / "repo"
-	write_package_info(repo, { "license": "MIT" })
-	write_package_info(repo / "pkg", { "description": "pkg" })
-	return repo
+def package_directory(tmp_path):
+	directory = tmp_path / "package"
+	write_package_info(directory, { "license": "MIT", "description": "pkg" })
+	return directory
 
-def update_conandata(run_script, repository, conandata_path, version, *args, name="vsm.pkg", check=True):
+def update_conandata(run_script, directory, conandata_path, version, *args, name="vsm.pkg", check=True):
 	return run_script("update_conandata.py",
-		"--root", repository,
-		"--path", "pkg",
+		"--source", directory,
 		"--name", name,
 		"--version", version,
 		"--src-url", f"https://example.com/{version}.tar.gz",
@@ -258,24 +234,23 @@ def load_yaml(path):
 	with open(path, "r") as file:
 		return yaml.safe_load(file)
 
-def test_cli_creates_conandata(tmp_path, package_repository, run_script):
+def test_cli_creates_conandata(tmp_path, package_directory, run_script):
 	conandata_path = tmp_path / "conandata.yml"
 
-	update_conandata(run_script, package_repository, conandata_path, "1.0")
+	update_conandata(run_script, package_directory, conandata_path, "1.0")
 
 	assert load_yaml(conandata_path) == {
 		"name": "vsm.pkg",
-		"path": "pkg",
 		"common_attributes": { "license": "MIT", "description": "pkg" },
 		"sources": { "1.0": { "url": "https://example.com/1.0.tar.gz", "sha256": "hash-1.0" } },
 	}
 
-def test_cli_adds_version_with_differing_attributes(tmp_path, package_repository, run_script):
+def test_cli_adds_version_with_differing_attributes(tmp_path, package_directory, run_script):
 	conandata_path = tmp_path / "conandata.yml"
 
-	update_conandata(run_script, package_repository, conandata_path, "1.0")
-	write_package_info(package_repository / "pkg", { "description": "pkg v2" })
-	update_conandata(run_script, package_repository, conandata_path, "2.0")
+	update_conandata(run_script, package_directory, conandata_path, "1.0")
+	write_package_info(package_directory, { "license": "MIT", "description": "pkg v2" })
+	update_conandata(run_script, package_directory, conandata_path, "2.0")
 
 	conandata = load_yaml(conandata_path)
 
@@ -286,12 +261,12 @@ def test_cli_adds_version_with_differing_attributes(tmp_path, package_repository
 	}
 	assert list(conandata["sources"].keys()) == ["1.0", "2.0"]
 
-def test_cli_replaces_existing_version(tmp_path, package_repository, run_script):
+def test_cli_replaces_existing_version(tmp_path, package_directory, run_script):
 	conandata_path = tmp_path / "conandata.yml"
 
-	update_conandata(run_script, package_repository, conandata_path, "1.0")
-	write_package_info(package_repository / "pkg", { "description": "changed" })
-	update_conandata(run_script, package_repository, conandata_path, "1.0")
+	update_conandata(run_script, package_directory, conandata_path, "1.0")
+	write_package_info(package_directory, { "license": "MIT", "description": "changed" })
+	update_conandata(run_script, package_directory, conandata_path, "1.0")
 
 	conandata = load_yaml(conandata_path)
 
@@ -299,11 +274,11 @@ def test_cli_replaces_existing_version(tmp_path, package_repository, run_script)
 	assert "attributes" not in conandata
 	assert list(conandata["sources"].keys()) == ["1.0"]
 
-def test_cli_mismatched_name_fails(tmp_path, package_repository, run_script):
+def test_cli_mismatched_name_fails(tmp_path, package_directory, run_script):
 	conandata_path = tmp_path / "conandata.yml"
 
-	update_conandata(run_script, package_repository, conandata_path, "1.0")
-	result = update_conandata(run_script, package_repository, conandata_path, "2.0", name="other", check=False)
+	update_conandata(run_script, package_directory, conandata_path, "1.0")
+	result = update_conandata(run_script, package_directory, conandata_path, "2.0", name="other", check=False)
 
 	assert result.returncode != 0
 	assert "Mismatched package name" in result.stderr

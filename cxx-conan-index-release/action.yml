@@ -3,28 +3,45 @@ description: 'Trigger release flow on a Conan index repository'
 author: 'Lauri Vasama'
 
 inputs:
+  token:
+    description: 'Conan index repository token'
+    required: true
   index_repository:
     description: 'Target Conan index repository name'
     default: ${{ github.repository_owner }}/conan-index
   package_name:
-    description: 'Package name'
-    required: true
+    description: 'Package name - deduced from the release reference (release/<path>/<version>) if empty'
   package_version:
-    description: 'Package version'
-    required: true
+    description: 'Package version - deduced from the release reference if empty'
+  package_base:
+    description: 'Prefix for the deduced package name'
   archive_url:
     description: 'Package archive URL'
     required: true
-#    default: ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ inputs.package_name }}-${{ inputs.package_version }}/source.tar.gz
+  archive_hash:
+    description: 'Package archive SHA-256 hash'
+    required: true
 
 runs:
   using: composite
   steps:
-  - name: Conan package id
+  - name: Trigger Conan index
     shell: pwsh
+    env:
+      GH_TOKEN: ${{ inputs.token }}
+      SOURCE_REF: ${{ github.ref }}
+      INDEX_REPOSITORY: ${{ inputs.index_repository }}
+      PACKAGE_NAME: ${{ inputs.package_name }}
+      PACKAGE_VERSION: ${{ inputs.package_version }}
+      PACKAGE_BASE: ${{ inputs.package_base }}
+      ARCHIVE_URL: ${{ inputs.archive_url }}
+      ARCHIVE_HASH: ${{ inputs.archive_hash }}
     run: |
-      /tmp/vsm-actions/scripts/Trigger-ConanIndex.ps1 \
-        -GitHubIndexRepository '${{ inputs.index_repository }}' \
-        -GitHubIndexRepositoryToken ${{ secrets.CONAN_INDEX_TOKEN }} \
-        -PackageName ${{ inputs.package_name }} \
-        -PackageVersion ${{ inputs.package_version }}
+      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Trigger-ConanIndex.ps1" `
+        -GitHubSourceReference $ENV:SOURCE_REF `
+        -GitHubIndexRepository $ENV:INDEX_REPOSITORY `
+        -PackageName $ENV:PACKAGE_NAME `
+        -PackageVersion $ENV:PACKAGE_VERSION `
+        -PackageBase $ENV:PACKAGE_BASE `
+        -ArchiveUrl $ENV:ARCHIVE_URL `
+        -ArchiveHash $ENV:ARCHIVE_HASH

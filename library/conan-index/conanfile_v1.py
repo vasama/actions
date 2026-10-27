@@ -92,7 +92,7 @@ class Package(ConanFile):
 
 	def source(self):
 		sources = self.conan_data["sources"][self.version]
-		get(self, **sources, strip_root=True)
+		get(self, **sources)
 
 	def build(self):
 		do_test = not self.conf.get("tools.build:skip_test", default=False)
@@ -101,16 +101,8 @@ class Package(ConanFile):
 			"BUILD_TESTING": "ON" if do_test else "OFF",
 		}
 
-		configure_args = {
-			"variables": configure_vars,
-		}
-
-		relative_path = self.conan_data.get("path")
-		if relative_path is not None:
-			configure_args["build_script_folder"] = relative_path
-
 		cmake = CMake(self)
-		cmake.configure(**configure_args)
+		cmake.configure(variables=configure_vars)
 		cmake.build()
 
 		if do_test:

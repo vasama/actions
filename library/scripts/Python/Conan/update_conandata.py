@@ -3,7 +3,6 @@
 import argparse
 import json
 import os
-import pathlib
 import sys
 import yaml
 
@@ -22,36 +21,14 @@ attribute_sort = {k:i for i, k in enumerate(attribute_keys.values())}
 attribute_sort["requirements"] = len(attribute_sort)
 
 
-def split_path(path):
-	return list(pathlib.PurePath(path).parts)
+def read_package_json(package_path):
+	path = os.path.join(package_path, "package_info.json")
 
-def read_package_json(repository_path, component_path):
-	package = dict()
-
-	read_any_json = False
-	def read_json_file(path):
-		path = os.path.join(path, "package_info.json")
-
-		if os.path.isfile(path):
-			with open(path, "r") as file:
-				json_data = json.load(file)
-
-			for key, value in json_data.items():
-				if not isinstance(value, list): package[key] = value
-				else: package.setdefault(key, []).extend(value)
-
-			nonlocal read_any_json
-			read_any_json = True
-
-	read_json_file(repository_path)
-	for path_part in split_path(component_path):
-		repository_path = os.path.join(repository_path, path_part)
-		read_json_file(repository_path)
-
-	if not read_any_json:
+	if not os.path.isfile(path):
 		raise RuntimeError("package_info.json not found")
 
-	return package
+	with open(path, "r") as file:
+		return json.load(file)
 
 def make_package_conandata(package):
 	data = dict()
@@ -92,8 +69,8 @@ def make_package_conandata(package):
 
 	return data
 
-def get_package_conandata(repository_path, component_path):
-	return make_package_conandata(read_package_json(repository_path, component_path))
+def get_package_conandata(package_path):
+	return make_package_conandata(read_package_json(package_path))
 
 
 def get_ver_data(conandata, version):
@@ -164,8 +141,7 @@ def merge_ver_data(ver_data):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument('--root')
-	parser.add_argument('--path')
+	parser.add_argument('--source')
 
 	parser.add_argument('--name')
 	parser.add_argument('--version')
@@ -188,13 +164,9 @@ if __name__ == "__main__":
 		if data.setdefault("name", args.name) != args.name:
 			raise RuntimeError(f"Mismatched package name: '{data["name"]}'")
 
-	if args.path is not None:
-		if data.setdefault("path", args.path) != args.path:
-			raise RuntimeError(f"Mismatched component path: '{data["path"]}'")
-
-	repository_path = os.getcwd() if args.root is None else args.root
+	package_path = os.getcwd() if args.source is None else args.source
 	ver_data = { v: get_ver_data(data, v) for v in data.get("sources", {}).keys() }
-	ver_data[args.version] = get_package_conandata(repository_path, args.path)
+	ver_data[args.version] = get_package_conandata(package_path)
 
 	all_data = merge_ver_data(ver_data)
 

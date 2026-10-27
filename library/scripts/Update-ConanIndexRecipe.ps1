@@ -5,9 +5,8 @@ param(
 	[string]$PackageVersion,
 
 	# Required by the update-recipe step:
-	[string]$PackagePath=$null,
-	[string]$GitHubRepository=$null,
-	[string]$GitHubReference=$null,
+	[string]$ArchiveUrl=$null,
+	[string]$ArchiveHash=$null,
 
 	[string]$Step=$null
 )
@@ -18,15 +17,9 @@ $PSNativeCommandUseErrorActionPreference = $true
 $RecipeDir = "./recipes/$PackageName/v1"
 
 if (!$Step -or $Step -eq 'update-recipe') {
-	if (!($GitHubRepository -match '^([^/]+)/([^/]+)$')) {
-		throw "Invalid GitHub repository: $GitHubRepository"
+	if (!$ArchiveUrl -or !$ArchiveHash) {
+		throw 'ArchiveUrl and ArchiveHash are required by the update-recipe step.'
 	}
-	$GitHubRepositoryName = $Matches[2]
-
-	if (!($GitHubReference -match '^refs/(heads|tags)/(.+)$')) {
-		throw "Invalid Git reference: $GitHubReference"
-	}
-	$GitHubReferenceName = $Matches[2] -replace '/','-'
 
 	$Conanfile = "$RecipeDir/conanfile.py"
 	$Conandata = "$RecipeDir/conandata.yml"
@@ -38,8 +31,7 @@ if (!$Step -or $Step -eq 'update-recipe') {
 		}
 	}
 
-	$SourceUrl = "https://github.com/$GitHubRepository/archive/$GitHubReference.zip"
-	Write-Output "Source URL: $SourceUrl"
+	Write-Output "Archive URL: $ArchiveUrl"
 
 	$TemporaryDir = [System.IO.Path]::GetTempPath()
 	$TemporaryDir = "$TemporaryDir/$((New-Guid).ToString("N"))"
@@ -47,26 +39,30 @@ if (!$Step -or $Step -eq 'update-recipe') {
 
 	try
 	{
-		$SourceDir = "$TemporaryDir/$GitHubRepositoryName-$GitHubReferenceName"
-		$SourceZip = "$SourceDir.zip"
+		$ArchiveFile = "$TemporaryDir/archive.tar.gz"
+		$SourceDir = "$TemporaryDir/source"
 
-		# Download and expand source archive:
-		Invoke-WebRequest $SourceUrl -OutFile $SourceZip | Out-Null
-		Expand-Archive -Path $SourceZip -DestinationPath $TemporaryDir
+		# Download and verify the package archive:
+		Invoke-WebRequest $ArchiveUrl -OutFile $ArchiveFile | Out-Null
 
-		$SourceHash = (Get-FileHash -Algorithm SHA256 $SourceZip).Hash.ToLowerInvariant()
-		Write-Output "Source SHA256: $SourceHash"
+		$SourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $ArchiveFile).Hash.ToLowerInvariant()
+		if ($SourceHash -ne $ArchiveHash.ToLowerInvariant()) {
+			throw "Archive SHA256 mismatch: expected $ArchiveHash, got $SourceHash"
+		}
+
+		# Expand the package archive:
+		New-Item -Path $SourceDir -ItemType Directory | Out-Null
+		tar -xzf $ArchiveFile -C $SourceDir
 
 		# Create the recipe directory:
 		New-Item -Path $RecipeDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
 
 		# Update recipe conandata.yml:
 		python3 "$PSScriptRoot/Python/Conan/update_conandata.py" `
-			--root $SourceDir `
-			--path $PackagePath `
+			--source $SourceDir `
 			--name $PackageName `
 			--version $PackageVersion `
-			--src-url $SourceUrl `
+			--src-url $ArchiveUrl `
 			--src-hash $SourceHash `
 			$Conandata
 

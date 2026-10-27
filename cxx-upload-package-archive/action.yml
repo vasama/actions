@@ -13,8 +13,11 @@ inputs:
     required: true
 
 outputs:
+  archive_url:
+    description: 'Package archive URL'
+    value: ${{ steps.upload.outputs.archive_url }}
   archive_hash:
-    description: 'Hash of the archive file'
+    description: 'Package archive SHA-256 hash'
     value: ${{ steps.archive.outputs.archive_hash }}
 
 runs:
@@ -23,30 +26,34 @@ runs:
   - name: Create package archive
     id: archive
     shell: pwsh
+    env:
+      ARCHIVE_NAME: ${{ inputs.archive_name }}
+      PACKAGE_PATH: ${{ inputs.package_path }}
     run: |
-      $ArchivePath = "$ENV:RUNNER_TEMP/$([System.IO.Path]::GetRandomFileName())"
-      New-Item -ItemType Directory -Force -Path $ArchivePath | Out-Null
+      $PSNativeCommandUseErrorActionPreference = $true
 
-      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/Conan/make_package_archive.py" '${{ inputs.package_path }}' $ArchivePath
-      $ArchiveHash = (Get-FileHash -Algorithm SHA256 $ArchivePath).Hash.ToLowerInvariant()
+      $ArchivePath = "$ENV:RUNNER_TEMP/$ENV:ARCHIVE_NAME"
+
+      python3 "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/Conan/make_package_archive.py" --package-path $ENV:PACKAGE_PATH --archive-path $ArchivePath
+      $ArchiveHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $ArchivePath).Hash.ToLowerInvariant()
 
       "archive_path=$ArchivePath" | Out-File -Append $ENV:GITHUB_OUTPUT
       "archive_hash=$ArchiveHash" | Out-File -Append $ENV:GITHUB_OUTPUT
 
   - name: Upload package archive
+    id: upload
     shell: pwsh
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      ARCHIVE_NAME: ${{ inputs.archive_name }}
+      ARCHIVE_PATH: ${{ steps.archive.outputs.archive_path }}
     run: |
-      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Upload-ReleaseAsset.ps1" \
-        -GitHubRepository '${{ inputs.repository }}' \
-        -GithubRepositoryToken '${{ secrets.REPOSITORY_TOKEN }}' \
-        -AssetName '${{ inputs.archive_name }}' \
-        -AssetPath '${{ steps.archive.outputs.archive_path }}'
+      $PSNativeCommandUseErrorActionPreference = $true
 
-  - name: Trigger Conan index
-    shell: pwsh
-    run: |
-      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Trigger-ConanIndex.ps1" \
-        -GitHubIndexRepository '${{ inputs.index_repository }}' \
-        -GitHubIndexRepositoryToken ${{ secrets.CONAN_INDEX_TOKEN }} \
-        -PackageName ${{ inputs.package_name }} \
-        -PackageVersion ${{ inputs.package_version }}
+      gh release upload $ENV:RELEASE_TAG $ENV:ARCHIVE_PATH --repo '${{ github.repository }}'
+
+      $Assets = (gh release view $ENV:RELEASE_TAG --repo '${{ github.repository }}' --json assets | ConvertFrom-Json).assets
+      $ArchiveUrl = ($Assets | Where-Object { $_.name -eq $ENV:ARCHIVE_NAME }).url
+
+      "archive_url=$ArchiveUrl" | Out-File -Append $ENV:GITHUB_OUTPUT

@@ -8,7 +8,7 @@ import tarfile
 import pytest
 
 from conftest import write_package_info
-from make_package_archive import add_file_from_string, get_file_size, get_tracked_files, read_package_info_json
+from make_package_archive import add_file_from_string, get_file_size, get_tracked_files
 
 
 def git(path, *args):
@@ -28,8 +28,8 @@ def repository(tmp_path):
 	pkg = repo / "pkg"
 	pkg.mkdir(parents=True)
 
-	write_package_info(repo, { "package_type": "root", "license": "MIT" })
-	write_package_info(pkg, { "description": "pkg" })
+	write_package_info(repo, { "license": "MIT" })
+	write_package_info(pkg, { "inherit": True, "description": "pkg" })
 
 	(repo / "README.md").write_text("readme")
 	(pkg / "CMakeLists.txt").write_text("cmake")
@@ -52,40 +52,6 @@ def test_get_file_size_preserves_position():
 
 	assert get_file_size(file) == 10
 	assert file.tell() == 3
-
-
-def test_read_package_info_json_merges_up_to_root(tmp_path):
-	write_package_info(tmp_path, { "license": "Apache-2.0" })
-	write_package_info(tmp_path / "a", { "package_type": "root", "license": "MIT" })
-	write_package_info(tmp_path / "a" / "b", { "description": "b" })
-
-	assert read_package_info_json(str(tmp_path / "a" / "b")) == {
-		"package_type": "root",
-		"license": "MIT",
-		"description": "b",
-	}
-
-def test_read_package_info_json_child_overrides_parent(tmp_path):
-	write_package_info(tmp_path, { "package_type": "root", "description": "root" })
-	write_package_info(tmp_path / "pkg", { "description": "pkg" })
-
-	assert read_package_info_json(str(tmp_path / "pkg"))["description"] == "pkg"
-
-def test_read_package_info_json_concatenates_lists_parent_first(tmp_path):
-	write_package_info(tmp_path, { "package_type": "root", "requirements": ["a"] })
-	write_package_info(tmp_path / "pkg", { "requirements": ["b"] })
-
-	assert read_package_info_json(str(tmp_path / "pkg"))["requirements"] == ["a", "b"]
-
-def test_read_package_info_json_without_recurse(tmp_path):
-	write_package_info(tmp_path, { "package_type": "root", "license": "MIT" })
-	write_package_info(tmp_path / "pkg", { "description": "pkg" })
-
-	assert read_package_info_json(str(tmp_path / "pkg"), recurse=False) == { "description": "pkg" }
-
-def test_read_package_info_json_missing_raises(tmp_path):
-	with pytest.raises(Exception, match="package_info.json not found"):
-		read_package_info_json(str(tmp_path))
 
 
 def test_get_tracked_files_lists_package_files(repository):
@@ -112,7 +78,7 @@ def test_add_file_from_string(tmp_path):
 
 def make_archive(run_script, repository, archive_path, *args, check=True):
 	return run_script("make_package_archive.py",
-		"--recipe-path", repository / "pkg",
+		"--package-path", repository / "pkg",
 		"--archive-path", archive_path,
 		*args,
 		check=check)
@@ -132,7 +98,19 @@ def test_cli_writes_merged_package_info(tmp_path, repository, run_script):
 	with tarfile.open(archive_path, "r:gz") as tar:
 		package_info = json.load(tar.extractfile("package_info.json"))
 
-	assert package_info == { "package_type": "root", "license": "MIT", "description": "pkg" }
+	assert package_info == { "license": "MIT", "description": "pkg" }
+
+def test_cli_package_info_without_inherit_stands_alone(tmp_path, repository, run_script):
+	write_package_info(repository / "pkg", { "description": "pkg" })
+	git(repository, "commit", "-q", "-am", "standalone")
+
+	archive_path = tmp_path / "archive.tar.gz"
+	make_archive(run_script, repository, archive_path)
+
+	with tarfile.open(archive_path, "r:gz") as tar:
+		package_info = json.load(tar.extractfile("package_info.json"))
+
+	assert package_info == { "description": "pkg" }
 
 def test_cli_preserves_file_modes(tmp_path, repository, run_script):
 	archive_path = tmp_path / "archive.tar.gz"

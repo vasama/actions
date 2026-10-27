@@ -4,24 +4,44 @@ on:
       package_path:
         type: string
         required: true
+      release_tag:
+        description: 'Tag of the release to upload the package archive to'
+        type: string
+        default: ${{ github.ref_name }}
+      archive_name:
+        description: 'File name of the uploaded package archive'
+        type: string
+        default: source.tar.gz
       index_repository:
         description: 'Target Conan index repository name'
         type: string
         default: ${{ github.repository_owner }}/conan-index
+    secrets:
+      CONAN_INDEX_TOKEN:
+        required: true
 
 jobs:
-  trigger-conan-index:
+  cxx-release-package:
     runs-on: ubuntu-latest
     name: "Trigger conan-index workflow"
 
-    steps:
-    - uses: vasama/actions/setup@main
+    permissions:
+      contents: write
 
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: vasama/actions/setup@main
     - uses: vasama/actions/cxx-upload-package-archive@main
+      id: archive
       with:
-        archive_name: source.tar.gz
+        release_tag: ${{ inputs.release_tag }}
+        archive_name: ${{ inputs.archive_name }}
         package_path: ${{ inputs.package_path }}
 
     - uses: vasama/actions/cxx-conan-index-release@main
       with:
+        token: ${{ secrets.CONAN_INDEX_TOKEN }}
         index_repository: ${{ inputs.index_repository }}
+        archive_url: ${{ steps.archive.outputs.archive_url }}
+        archive_hash: ${{ steps.archive.outputs.archive_hash }}

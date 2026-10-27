@@ -6,32 +6,37 @@ import os
 import sys
 
 def read_package_info(directory):
+	json_file = os.path.join(directory, "package_info.json")
+
+	if not os.path.isfile(json_file):
+		raise Exception("package_info.json not found")
+
 	json_layers = []
 
-	while directory:
-		json_file = os.path.join(directory, "package_info.json")
+	while True:
+		with open(json_file, 'r') as file:
+			json_data = json.load(file)
 
-		if os.path.isfile(json_file):
-			with open(json_file, 'r') as file:
-				json_data = json.load(file)
+		json_layers.append(json_data)
 
-			json_layers.append(json_data)
+		inherit = json_data.get("inherit", False)
+		if not isinstance(inherit, bool):
+			raise Exception("Invalid inherit field in package_info.json")
 
-			inherit = json_data.get("inherit", False)
-			if not isinstance(inherit, bool):
-				raise Exception("Invalid inherit field in package_info.json")
-
-			if not inherit:
-				break
-
-		parent_directory = os.path.dirname(directory)
-		if parent_directory == directory:
+		if not inherit:
 			break
 
-		directory = parent_directory
+		# Search the parent directories for the inherited package_info.json:
+		while True:
+			parent_directory = os.path.dirname(directory)
+			if parent_directory == directory:
+				raise Exception("Inherited package_info.json not found")
 
-	if len(json_layers) == 0:
-		raise Exception("package_info.json not found")
+			directory = parent_directory
+			json_file = os.path.join(directory, "package_info.json")
+
+			if os.path.isfile(json_file):
+				break
 
 	json_layers.reverse()
 

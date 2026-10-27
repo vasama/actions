@@ -1,86 +1,66 @@
 #!/usr/bin/pwsh
 
 param(
-	[string]$GitHubSourceRepository,
 	[string]$GitHubSourceReference,
 
 	[string]$GitHubIndexRepository,
-	[string]$GitHubIndexRepositoryToken,
 	[string]$GitHubIndexReference='main',
 	[string]$GitHubIndexWorkflow='create-package.yml',
 
-	[string]$PackagePath=$null,
 	[string]$PackageName=$null,
 	[string]$PackageVersion=$null,
 	[string]$PackageBase=$null,
+
+	[string]$ArchiveUrl,
+	[string]$ArchiveHash,
 
 	[switch]$WhatIf=$false
 )
 
 $ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
 
 if ($PackageName -and $PackageBase) {
 	throw 'PackageBase may not be specified together with PackageName'
 }
 
-if (!$PackagePath -or !$PackageVersion) {
-	# Deduce package name and version from the git reference:
-	# release/package/version
+if (!$ArchiveUrl -or !$ArchiveHash) {
+	throw 'ArchiveUrl and ArchiveHash must be specified.'
+}
 
-	if ($PackagePath -or $PackageVersion) {
-		throw 'PackagePath and PackageVersion must be specified together.'
-	}
+if (!$PackageName -or !$PackageVersion) {
+	# Deduce package name and version from the git reference:
+	# release/package/path/version
 
 	if (!($GitHubSourceReference -match '^refs/(heads|tags)/release/([^/]+(?:/[^/]+)+?)/([^/]+)$')) {
 		throw "Invalid release reference: $GitHubSourceReference"
 	}
 
-	$PackagePath = $Matches[2]
-	$PackageVersion = $Matches[3]
-}
+	if (!$PackageName) {
+		$PackageName = $Matches[2] -replace '/','.'
 
-if (!$PackageName) {
-	$PackageName = $PackagePath -replace '\\','/' -replace '/','.'
+		if ($PackageBase) {
+			$PackageName = "$PackageBase.$PackageName"
+		}
+	}
 
-	if ($PackageBase) {
-		$PackageName = "$PackageBase.$PackageName"
+	if (!$PackageVersion) {
+		$PackageVersion = $Matches[3]
 	}
 }
 
-$WorkflowInputs = @{
-	package_path=$PackagePath;
-	package_name=$PackageName;
-	package_version=$PackageVersion;
-	github_repository=$GitHubSourceRepository;
-	github_reference=$GitHubSourceReference;
-}
-
-$RequestUrl = "https://$ENV:GITHUB_API_URL/repos/$GitHubIndexRepository"
-$RequestUrl = "$RequestUrl/actions/workflows/$GitHubIndexWorkflow/dispatches"
-
-if ($WhatIf) {
-	# Hide the access token:
-	$GitHubIndexRepositoryToken = '<access token>'
-}
-
-$RequestHeaders = @{}
-$RequestHeaders['Accept'] = 'application/vnd.github+json'
-$RequestHeaders['Authorization'] = "Bearer $GitHubIndexRepositoryToken"
-$RequestHeaders['X-GitHub-Api-Version'] = '2022-11-28'
-
-$RequestContent = ConvertTo-Json @{
-	ref = $GitHubIndexReference;
-	inputs = $WorkflowInputs;
-}
+$GhArguments = @(
+	'workflow', 'run', $GitHubIndexWorkflow,
+	'--repo', $GitHubIndexRepository,
+	'--ref', $GitHubIndexReference,
+	'-f', "package_name=$PackageName",
+	'-f', "package_version=$PackageVersion",
+	'-f', "archive_url=$ArchiveUrl",
+	'-f', "archive_hash=$ArchiveHash"
+)
 
 if ($WhatIf) {
-	$RequestHeaders = [PSCustomObject]$RequestHeaders
-
-	[PSCustomObject]@{
-		Url=$RequestUrl;
-		Headers=$RequestHeaders;
-		Content=$RequestContent;
-	}
+	Write-Output "gh $($GhArguments | ForEach-Object { "'$_'" } | Join-String -Separator ' ')"
 } else {
-	Invoke-WebRequest -Uri $RequestUrl -Method Post -Headers $RequestHeaders -Body $RequestContent | Out-Null
+	gh @GhArguments
 }
