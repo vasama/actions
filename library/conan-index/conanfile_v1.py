@@ -84,7 +84,13 @@ class Package(ConanFile):
 	def requirements(self):
 		#TODO: Do we need an explicit CMake dependency?
 
+		skip_test = self.conf.get("tools.build:skip_test", default=False)
+
 		for require in Conandata(self).get("requirements", []):
+			# Requirements only used in testing are not needed when testing is disabled:
+			if require.get("testing", False) and skip_test:
+				continue
+
 			self.requires(require["reference"], **require.get("arguments", {}))
 
 	def layout(self):

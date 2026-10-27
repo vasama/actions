@@ -40,25 +40,58 @@ def test_make_package_conandata_maps_attributes():
 		"package_type": "static-library",
 	}
 
-def test_make_package_conandata_requirements():
-	package = { "requirements": [
-		{ "package": "a", "version": "1.0" },
-		{ "package": "b", "version": "2.0", "test": True, "visible": False },
-	]}
+TOOL_ARGUMENTS = { "build": True, "headers": False, "libs": False, "run": True, "visible": False }
+
+def make_requirements(*configs):
+	package = { "requirements": [{ "package": "a", "version": "1.0", "configs": c } for c in configs] }
+	return make_package_conandata(package)["requirements"]
+
+def test_make_package_conandata_requirement_defaults_to_header_library():
+	package = { "requirements": [{ "package": "a", "version": "1.0" }] }
 
 	assert make_package_conandata(package)["requirements"] == [
-		{ "reference": "a/1.0" },
-		{ "reference": "b/2.0", "arguments": { "test": True, "visible": False } },
+		{ "reference": "a/1.0", "arguments": { "transitive_headers": True } },
 	]
+
+@pytest.mark.parametrize("config, requirement", [
+	("header-library", { "arguments": { "transitive_headers": True } }),
+	("source-library", {}),
+	("test-library", {
+		"arguments": { "headers": True, "libs": True, "test": True, "visible": False },
+		"testing": True,
+	}),
+	("source-application", { "arguments": TOOL_ARGUMENTS }),
+	("test-application", { "arguments": TOOL_ARGUMENTS, "testing": True }),
+])
+def test_make_package_conandata_requirement_config(config, requirement):
+	assert make_requirements(config) == [{ "reference": "a/1.0", **requirement }]
+
+def test_make_package_conandata_requirement_config_list_is_used_two_ways():
+	assert make_requirements(["source-library", "test-application"]) == [
+		{ "reference": "a/1.0" },
+		{ "reference": "a/1.0", "arguments": TOOL_ARGUMENTS, "testing": True },
+	]
+
+def test_make_package_conandata_requirements_do_not_share_objects():
+	requirements = make_requirements("source-application", "source-application")
+
+	assert requirements[0]["arguments"] is not requirements[1]["arguments"]
 
 def test_make_package_conandata_omits_empty_requirements():
 	assert "requirements" not in make_package_conandata({ "requirements": [] })
 
-def test_make_package_conandata_mistyped_requirement_option_raises():
-	package = { "requirements": [{ "package": "a", "version": "1.0", "test": "yes" }] }
+@pytest.mark.parametrize("configs", ["header-application", "unknown"])
+def test_make_package_conandata_unsupported_config_raises(configs):
+	with pytest.raises(RuntimeError, match="Unsupported requirement config"):
+		make_requirements(configs)
 
-	with pytest.raises(RuntimeError, match="Mistyped requirement option: test"):
-		make_package_conandata(package)
+def test_make_package_conandata_mistyped_configs_raises():
+	with pytest.raises(RuntimeError, match="Mistyped requirement configs"):
+		make_requirements(True)
+
+def test_make_package_conandata_same_context_configs_raise():
+	with pytest.raises(RuntimeError, match="Conflicting requirement configs"):
+		make_requirements(["header-library", "test-library"])
 
 
 def test_get_ver_data_without_attributes():

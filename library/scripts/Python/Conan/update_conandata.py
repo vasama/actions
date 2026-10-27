@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import copy
 import json
 import os
 import sys
@@ -19,6 +20,18 @@ attribute_keys = {
 
 attribute_sort = {k:i for i, k in enumerate(attribute_keys.values())}
 attribute_sort["requirements"] = len(attribute_sort)
+
+# Conan requirement for each requirement config in package_info.json.
+# The arguments match those used by Conan's tool_requires and test_requires.
+# Requirements marked as testing are skipped when testing is disabled.
+tool_arguments = { "build": True, "headers": False, "libs": False, "run": True, "visible": False }
+requirement_configs = {
+	"header-library": { "arguments": { "transitive_headers": True } },
+	"source-library": {},
+	"test-library": { "arguments": { "headers": True, "libs": True, "test": True, "visible": False }, "testing": True },
+	"source-application": { "arguments": tool_arguments },
+	"test-application": { "arguments": tool_arguments, "testing": True },
+}
 
 
 def read_package_json(package_path):
@@ -40,29 +53,27 @@ def make_package_conandata(package):
 	data_requirements = []
 	for require in package.get("requirements", ()):
 		reference = f"{require["package"]}/{require["version"]}"
-		arguments = {}
 
-		def set_require_bool(name, data_name=None):
-			if data_name is None:
-				data_name = name
+		configs = require.get("configs", "header-library")
+		if isinstance(configs, str):
+			configs = [configs]
+		elif not isinstance(configs, list):
+			raise RuntimeError(f"Mistyped requirement configs for {reference}")
 
-			value = require.get(name)
-			if value is not None:
-				if not isinstance(value, bool):
-					raise RuntimeError(f"Mistyped requirement option: {name}")
+		# Each config is a separate use of the requirement:
+		build_contexts = set()
+		for config in configs:
+			data_config = requirement_configs.get(config)
+			if data_config is None:
+				raise RuntimeError(f"Unsupported requirement config for {reference}: {config}")
 
-				arguments[data_name] = value
+			# Conan allows only one requirement per reference in each context:
+			build_context = data_config.get("arguments", {}).get("build", False)
+			if build_context in build_contexts:
+				raise RuntimeError(f"Conflicting requirement configs for {reference}")
+			build_contexts.add(build_context)
 
-		set_require_bool("host", "build")
-		set_require_bool("test")
-		set_require_bool("visible")
-
-		data_require = { "reference": reference }
-
-		if len(arguments) != 0:
-			data_require["arguments"] = arguments
-
-		data_requirements.append(data_require)
+			data_requirements.append({ "reference": reference, **copy.deepcopy(data_config) })
 
 	if len(data_requirements) != 0:
 		data["requirements"] = data_requirements
