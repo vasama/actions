@@ -4,10 +4,10 @@
 
 	"$defs": {
 		"package-type-pattern": {
-			"pattern": "((header|object|static|shared)?-library)|application"
+			"pattern": "^(((header|object|static|shared)-library)|application)$"
 		},
 		"requirement-config-pattern": {
-			"pattern": "(header|source|test)-(library|application)"
+			"pattern": "^(header|source|test)-(library|application)$"
 		}
 	},
 
