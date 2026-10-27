@@ -1,0 +1,21 @@
+name: 'vasama/actions: check-actor-role'
+description: 'Check that the actor who triggered the workflow has the admin or maintain role in the repository'
+author: 'Lauri Vasama'
+
+runs:
+  using: composite
+  steps:
+  - name: Check actor role
+    shell: pwsh
+    env:
+      GH_TOKEN: ${{ github.token }}
+    run: |
+      $PSNativeCommandUseErrorActionPreference = $true
+
+      $Permission = gh api 'repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission' | ConvertFrom-Json
+
+      $Role = $Permission.role_name
+      if (@('admin', 'maintain') -notcontains $Role) {
+        Write-Output "::error::Actor '${{ github.actor }}' has insufficient role: $Role"
+        exit 1
+      }
