@@ -49,11 +49,11 @@ function Generate-DefaultProfile($Compiler, $Config) {
 # Run Conan for the first time to create configuration directory.
 conan | Out-Null
 
-if (!(Test-Path -PathType Container $env:CONAN_HOME)) {
+if (!(Test-Path -PathType Container $ENV:CONAN_HOME)) {
 	throw 'Conan configuration directory was not created as expected.'
 }
 
-$ProfilesDirectory = "$env:CONAN_HOME/profiles"
+$ProfilesDirectory = "$ENV:CONAN_HOME/profiles"
 if (!(Test-Path -PathType Container $ProfilesDirectory)) {
 	New-Item -ItemType Directory $ProfilesDirectory
 }
