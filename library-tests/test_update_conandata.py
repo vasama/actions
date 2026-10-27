@@ -60,6 +60,7 @@ def test_make_package_conandata_requirement_defaults_to_header_library():
 		"arguments": { "headers": True, "libs": True, "test": True, "visible": False },
 		"testing": True,
 	}),
+	("header-application", { "arguments": { **TOOL_ARGUMENTS, "visible": True } }),
 	("source-application", { "arguments": TOOL_ARGUMENTS }),
 	("test-application", { "arguments": TOOL_ARGUMENTS, "testing": True }),
 ])
@@ -80,18 +81,21 @@ def test_make_package_conandata_requirements_do_not_share_objects():
 def test_make_package_conandata_omits_empty_requirements():
 	assert "requirements" not in make_package_conandata({ "requirements": [] })
 
-@pytest.mark.parametrize("configs", ["header-application", "unknown"])
-def test_make_package_conandata_unsupported_config_raises(configs):
+def test_make_package_conandata_unsupported_config_raises():
 	with pytest.raises(RuntimeError, match="Unsupported requirement config"):
-		make_requirements(configs)
+		make_requirements("unknown")
 
 def test_make_package_conandata_mistyped_configs_raises():
 	with pytest.raises(RuntimeError, match="Mistyped requirement configs"):
 		make_requirements(True)
 
-def test_make_package_conandata_same_context_configs_raise():
+@pytest.mark.parametrize("configs", [
+	["header-library", "test-library"],
+	["header-application", "source-application"],
+])
+def test_make_package_conandata_same_context_configs_raise(configs):
 	with pytest.raises(RuntimeError, match="Conflicting requirement configs"):
-		make_requirements(["header-library", "test-library"])
+		make_requirements(configs)
 
 
 def test_get_ver_data_without_attributes():

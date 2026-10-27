@@ -23,12 +23,14 @@ attribute_sort["requirements"] = len(attribute_sort)
 
 # Conan requirement for each requirement config in package_info.json.
 # The arguments match those used by Conan's tool_requires and test_requires.
+# A visible tool requirement is also a build requirement of the consumers.
 # Requirements marked as testing are skipped when testing is disabled.
 tool_arguments = { "build": True, "headers": False, "libs": False, "run": True, "visible": False }
 requirement_configs = {
 	"header-library": { "arguments": { "transitive_headers": True } },
 	"source-library": {},
 	"test-library": { "arguments": { "headers": True, "libs": True, "test": True, "visible": False }, "testing": True },
+	"header-application": { "arguments": { **tool_arguments, "visible": True } },
 	"source-application": { "arguments": tool_arguments },
 	"test-application": { "arguments": tool_arguments, "testing": True },
 }
