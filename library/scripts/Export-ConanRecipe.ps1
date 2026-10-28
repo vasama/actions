@@ -8,15 +8,23 @@ param(
 	[string]$PackageUser=$null,
 	[string]$PackageChannel=$null,
 
+	[string]$IndexPath='.',
+
 	[string]$Step=$null
 )
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
+if ($PackageChannel -and !$PackageUser) {
+	throw 'PackageChannel requires PackageUser.'
+}
+
+$IndexPath = Resolve-Path -ErrorAction Stop $IndexPath
+
 if (!$Step -or $Step -eq 'conan-export') {
-	$RecipeDir = python3 "$PSScriptRoot/Python/Conan/get_recipe_directory.py" `
-		--root . `
+	$RecipeDir = python "$PSScriptRoot/Python/Conan/get_recipe_directory.py" `
+		--root $IndexPath `
 		--name $PackageName `
 		--version $PackageVersion
 

@@ -1,0 +1,72 @@
+on:
+  workflow_call:
+    inputs:
+      package_name:
+        description: 'Conan package name'
+        type: string
+        required: true
+      package_version:
+        description: 'Conan package version'
+        type: string
+        required: true
+      package_user:
+        description: 'Conan package user'
+        type: string
+        default: ''
+      package_channel:
+        description: 'Conan package channel, requires a user'
+        type: string
+        default: ''
+      remote_url:
+        description: 'URL of the target Conan remote'
+        type: string
+        required: true
+    secrets:
+      CONAN_LOGIN_USERNAME:
+        required: true
+      CONAN_PASSWORD:
+        required: true
+
+jobs:
+  conan-index-export-package:
+    name: "Export package: ${{ inputs.package_name }}/${{ inputs.package_version }}"
+
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/vasama/actions-ubuntu:v0_5
+
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v7
+    - uses: vasama/actions/setup@main
+
+    - name: Set up Conan remote
+      shell: pwsh
+      env:
+        REMOTE_URL: ${{ inputs.remote_url }}
+      run: |
+        conan remote add export $ENV:REMOTE_URL
+
+    - name: Export package
+      shell: pwsh
+      env:
+        PACKAGE_NAME: ${{ inputs.package_name }}
+        PACKAGE_VERSION: ${{ inputs.package_version }}
+        PACKAGE_USER: ${{ inputs.package_user }}
+        PACKAGE_CHANNEL: ${{ inputs.package_channel }}
+        # Used by Conan to authenticate with the remote:
+        CONAN_LOGIN_USERNAME: ${{ secrets.CONAN_LOGIN_USERNAME }}
+        CONAN_PASSWORD: ${{ secrets.CONAN_PASSWORD }}
+      run: |
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Utilities/New-PythonEnvironment.ps1" `
+          -Path "$ENV:RUNNER_TEMP/vsm-actions-venv" `
+          -Requirements "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/requirements.txt"
+
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Export-ConanRecipe.ps1" `
+          -Remote export `
+          -PackageName $ENV:PACKAGE_NAME `
+          -PackageVersion $ENV:PACKAGE_VERSION `
+          -PackageUser $ENV:PACKAGE_USER `
+          -PackageChannel $ENV:PACKAGE_CHANNEL
