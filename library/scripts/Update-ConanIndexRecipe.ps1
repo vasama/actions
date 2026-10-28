@@ -4,7 +4,8 @@ param(
 	[string]$PackageName,
 	[string]$PackageVersion,
 
-	# Required by the update-recipe step:
+	[string]$IndexPath='.',
+
 	[string]$ArchiveUrl=$null,
 	[string]$ArchiveHash=$null,
 
@@ -14,9 +15,11 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
+$IndexPath = Resolve-Path -ErrorAction Stop $IndexPath
+
 $ConanfileVersion = 'v1'
-$RecipeDir = "./recipes/$PackageName/$ConanfileVersion"
-$RecipeConfig = "./recipes/$PackageName/config.yml"
+$RecipeDir = "$IndexPath/recipes/$PackageName/$ConanfileVersion"
+$RecipeConfig = "$IndexPath/recipes/$PackageName/config.yml"
 
 if (!$Step -or $Step -eq 'update-recipe') {
 	if (!$ArchiveUrl -or !$ArchiveHash) {
@@ -88,12 +91,12 @@ if (!$Step -or $Step -eq 'create-package') {
 }
 
 if (!$Step -or $Step -eq 'create-commit') {
-	git add $RecipeDir $RecipeConfig
-	git commit `
+	git -C $IndexPath add $RecipeDir $RecipeConfig
+	git -C $IndexPath commit `
 		--message "Add $PackageName/$PackageVersion" `
 		--message "This commit was created by an automated process."
 }
 
 if (!$Step -or $Step -eq 'push-changes') {
-	git push
+	git -C $IndexPath push
 }
