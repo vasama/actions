@@ -14,7 +14,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-$RecipeDir = "./recipes/$PackageName/v1"
+$ConanfileVersion = 'v1'
+$RecipeDir = "./recipes/$PackageName/$ConanfileVersion"
+$RecipeConfig = "./recipes/$PackageName/config.yml"
 
 if (!$Step -or $Step -eq 'update-recipe') {
 	if (!$ArchiveUrl -or !$ArchiveHash) {
@@ -26,7 +28,7 @@ if (!$Step -or $Step -eq 'update-recipe') {
 
 	if (Test-Path -PathType Leaf $Conanfile) {
 		$Header = Get-Content -Path $Conanfile -TotalCount 1
-		if (!($Header -match '^# VSM-CONANFILE-v1$')) {
+		if (!($Header -match "^# VSM-CONANFILE-$ConanfileVersion`$")) {
 			throw 'The incompatible existing recipe may not be overwritten.'
 		}
 	}
@@ -58,7 +60,7 @@ if (!$Step -or $Step -eq 'update-recipe') {
 		New-Item -Path $RecipeDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
 
 		# Update recipe conandata.yml:
-		python3 "$PSScriptRoot/Python/Conan/update_conandata.py" `
+		python "$PSScriptRoot/Python/Conan/update_conandata.py" `
 			--source $SourceDir `
 			--name $PackageName `
 			--version $PackageVersion `
@@ -66,8 +68,14 @@ if (!$Step -or $Step -eq 'update-recipe') {
 			--src-hash $SourceHash `
 			$Conandata
 
+		# Update recipe config.yml, required by the local recipes index:
+		python "$PSScriptRoot/Python/Conan/update_recipe_config.py" `
+			--version $PackageVersion `
+			--folder $ConanfileVersion `
+			$RecipeConfig
+
 		# Copy the latest conanfile.py to the recipe directory:
-		Copy-Item -Path "$PSScriptRoot/../conan-index/conanfile_v1.py" -Destination $Conanfile
+		Copy-Item -Path "$PSScriptRoot/../conan-index/conanfile_$ConanfileVersion.py" -Destination $Conanfile
 	}
 	finally
 	{
@@ -80,7 +88,7 @@ if (!$Step -or $Step -eq 'create-package') {
 }
 
 if (!$Step -or $Step -eq 'create-commit') {
-	git add $RecipeDir
+	git add $RecipeDir $RecipeConfig
 	git commit `
 		--message "Add $PackageName/$PackageVersion" `
 		--message "This commit was created by an automated process."

@@ -32,10 +32,15 @@ runs:
     run: |
       $PSNativeCommandUseErrorActionPreference = $true
 
-      $Python = & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Utilities/New-PythonEnvironment.ps1" -Path "$ENV:RUNNER_TEMP/vsm-actions-venv"
+      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Utilities/New-PythonEnvironment.ps1" `
+        -Path "$ENV:RUNNER_TEMP/vsm-actions-venv" `
+        -Requirements "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/requirements.txt"
 
       $ArchivePath = "$ENV:RUNNER_TEMP/$ENV:ARCHIVE_NAME"
-      & $Python "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/Conan/make_package_archive.py" --package-path $ENV:PACKAGE_PATH --archive-path $ArchivePath
+      python "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/Conan/make_package_archive.py" `
+        --package-path $ENV:PACKAGE_PATH `
+        --archive-path $ArchivePath
+
       $ArchiveHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $ArchivePath).Hash.ToLowerInvariant()
 
       "archive_path=$ArchivePath" | Out-File -Append $ENV:GITHUB_OUTPUT

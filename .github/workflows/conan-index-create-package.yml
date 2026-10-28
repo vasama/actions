@@ -1,0 +1,68 @@
+on:
+  workflow_call:
+    inputs:
+      package_name:
+        description: 'Conan package name'
+        type: string
+        required: true
+      package_version:
+        description: 'Conan package version'
+        type: string
+        required: true
+      archive_url:
+        description: 'Package archive URL'
+        type: string
+        required: true
+      archive_hash:
+        description: 'Package archive SHA-256 hash'
+        type: string
+        required: true
+
+jobs:
+  conan-index-create-package:
+    name: "Create package: ${{ inputs.package_name }}/${{ inputs.package_version }}"
+
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/vasama/actions-ubuntu:v0_5
+
+    permissions:
+      contents: write
+
+    # Serialize the pushes to the index:
+    concurrency:
+      group: conan-index-create-package-${{ github.repository }}
+      queue: max
+
+    steps:
+    - uses: actions/checkout@v7
+    - uses: vasama/actions/setup@main
+
+    - name: Set Git user information
+      shell: pwsh
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+    - name: Set up local Conan remote
+      shell: pwsh
+      run: |
+        conan remote add conan-index $ENV:GITHUB_WORKSPACE
+
+    - name: Create package
+      shell: pwsh
+      env:
+        PACKAGE_NAME: ${{ inputs.package_name }}
+        PACKAGE_VERSION: ${{ inputs.package_version }}
+        ARCHIVE_URL: ${{ inputs.archive_url }}
+        ARCHIVE_HASH: ${{ inputs.archive_hash }}
+      run: |
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Utilities/New-PythonEnvironment.ps1" `
+          -Path "$ENV:RUNNER_TEMP/vsm-actions-venv" `
+          -Requirements "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/requirements.txt"
+
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Update-ConanIndexRecipe.ps1" `
+          -PackageName $ENV:PACKAGE_NAME `
+          -PackageVersion $ENV:PACKAGE_VERSION `
+          -ArchiveUrl $ENV:ARCHIVE_URL `
+          -ArchiveHash $ENV:ARCHIVE_HASH

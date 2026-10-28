@@ -1,11 +1,10 @@
 #!/usr/bin/pwsh
 
-# Creates a Python virtual environment with the dependencies of the library Python scripts.
-# Outputs the path of the virtual environment's Python executable.
-
 param(
 	[Parameter(Mandatory)]
-	[string]$Path
+	[string]$Path,
+
+	[string]$Requirements = $null
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,16 +12,19 @@ $PSNativeCommandUseErrorActionPreference = $true
 
 if ($IsWindows) {
 	$SystemPython = 'python'
-	$Python = "$Path/Scripts/python.exe"
+	$BinPath = "$Path/Scripts"
 } else {
 	$SystemPython = 'python3'
-	$Python = "$Path/bin/python"
+	$BinPath = "$Path/bin"
 }
 
-$Requirements = Resolve-Path -ErrorAction Stop "$PSScriptRoot/../Python/requirements.txt"
+if ($Requirements) {
+	$Requirements = Resolve-Path -ErrorAction Stop $Requirements
+}
 
-# Keep the command output out of the script output:
-& $SystemPython -m venv $Path | Out-Host
-& $Python -m pip install --quiet --disable-pip-version-check -r $Requirements | Out-Host
+& $SystemPython -m venv $Path
+. "$BinPath/Activate.ps1"
 
-Write-Output $Python
+if ($Requirements) {
+	python -m pip install --quiet --disable-pip-version-check -r $Requirements
+}
