@@ -8,6 +8,8 @@ param(
 	[string]$ConanBuild=$null,
 	[string]$Step=$null,
 
+	[switch]$CMakeWarningsAsErrors=$false,
+
 	[switch]$WhatIf=$false
 )
 
@@ -144,10 +146,15 @@ if (!$Step -or $Step -eq 'conan-install') {
 }
 
 if (!$Step -or $Step -eq 'cmake-configure') {
+	$CMakeArguments = @("--preset", $CMakePreset)
+	if ($CMakeWarningsAsErrors) {
+		$CMakeArguments += @("-Werror=dev")
+	}
+
 	if ($WhatIf) {
-		Write-Output "cmake --preset $CMakePreset"
+		Write-Output "cmake $($CMakeArguments -join ' ')"
 	} else {
-		cmake --preset $CMakePreset
+		cmake @CMakeArguments
 	}
 }
 

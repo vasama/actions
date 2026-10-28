@@ -42,13 +42,13 @@ if ($TestCurrentCommit) {
 			Write-Output $SetupScript
 		}
 
-		Write-Output "$TestScript -Config Release -ConanBuild missing"
+		Write-Output "$TestScript -Config Release -ConanBuild missing -CMakeWarningsAsErrors"
 	} else {
 		if ($SetupScript) {
 			& $SetupScript
 		}
 
-		& $TestScript -Config Release -ConanBuild missing
+		& $TestScript -Config Release -ConanBuild missing -CMakeWarningsAsErrors
 	}
 } else {
 	if (!$BaseRef) {
