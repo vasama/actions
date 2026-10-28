@@ -3,41 +3,37 @@ name: Merge pull request
 on:
   workflow_call:
     inputs:
-      label:
-        description: Merge queue marker label
-        type: string
-        default: merge
-      timeout:
-        description: Maximum time in minutes to wait for the pull request to become mergeable.
+      pull_request:
+        description: Pull request number
         type: number
-        default: 300
+        required: true
+      head_sha:
+        description: Expected pull request head commit
+        type: string
+        required: true
+      base_ref:
+        description: Expected pull request base branch
+        type: string
+        required: true
 
 permissions:
   contents: read
 
 jobs:
-  authorize:
-    if: github.event.label.name == inputs.label
-    runs-on: ubuntu-latest
-    steps:
-    - uses: vasama/actions/check-actor-role@main
-
   merge:
-    needs: authorize
-
     permissions:
-      actions: read
-      checks: read
       contents: write
-      pull-requests: read
+      pull-requests: write
 
     concurrency:
-      group: merge-queue-${{ github.event.pull_request.base.ref }}
-      cancel-in-progress: false
+      group: merge-queue-${{ inputs.base_ref }}
+      queue: max
 
     env:
       GH_TOKEN: ${{ github.token }}
-      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PULL_REQUEST: ${{ inputs.pull_request }}
+      HEAD_SHA: ${{ inputs.head_sha }}
+      BASE_REF: ${{ inputs.base_ref }}
 
     runs-on: ubuntu-latest
     steps:
@@ -51,43 +47,26 @@ jobs:
           exit 1
         }
 
-        $FailedConclusions = @('failure', 'cancelled', 'timed_out', 'startup_failure')
-
-        # Check results from before this run (e.g. from a previous attempt) are ignored.
-        $StartTime = (gh api 'repos/${{ github.repository }}/actions/runs/${{ github.run_id }}' | ConvertFrom-Json).run_started_at
-        $Deadline = (Get-Date).AddMinutes(${{ inputs.timeout }})
-
-        while ($true) {
-          $PullRequest = gh api 'repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}' | ConvertFrom-Json
+        for ($Attempt = 1; $true; ++$Attempt) {
+          $PullRequest = gh api "repos/${{ github.repository }}/pulls/$ENV:PULL_REQUEST" | ConvertFrom-Json
 
           if ($PullRequest.state -ne 'open') {
             Fail 'The pull request is no longer open.'
           }
-          if ($PullRequest.head.sha -ne '${{ github.event.pull_request.head.sha }}') {
-            Fail 'The pull request head has changed since it was queued for merge.'
+          if ($PullRequest.head.sha -ne $ENV:HEAD_SHA) {
+            Fail 'The pull request head has changed since it was labeled for merge.'
           }
-          if ($PullRequest.mergeable_state -eq 'dirty') {
-            Fail 'The pull request has merge conflicts.'
+          if ($PullRequest.base.ref -ne $ENV:BASE_REF) {
+            Fail 'The pull request base has changed since it was labeled for merge.'
           }
-          if ($PullRequest.mergeable -eq $true -and $PullRequest.mergeable_state -eq 'clean') {
+          if ($PullRequest.mergeable_state -eq 'clean') {
             break
           }
-
-          $FailedChecks = gh api --paginate `
-            'repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs?filter=latest&per_page=100' `
-            --jq '.check_runs[] | select(.status == "completed") | {name, conclusion, completed_at}' |
-            ForEach-Object { ConvertFrom-Json $_ } |
-            Where-Object { $_.completed_at -ge $StartTime -and $FailedConclusions -contains $_.conclusion }
-
-          if ($FailedChecks) {
-            Fail "Checks failed: $(($FailedChecks | ForEach-Object { $_.name }) -join ', ')"
+          if ($Attempt -ge 12) {
+            Fail "The pull request is not mergeable: $($PullRequest.mergeable_state)"
           }
 
-          if ((Get-Date) -ge $Deadline) {
-            Fail "The pull request did not become mergeable within ${{ inputs.timeout }} minutes."
-          }
-
-          Start-Sleep -Seconds 60
+          Start-Sleep -Seconds 5
         }
 
     - name: Checkout
@@ -100,36 +79,19 @@ jobs:
       run: |
         $PSNativeCommandUseErrorActionPreference = $true
 
-        git fetch origin 'refs/pull/${{ github.event.pull_request.number }}/head'
+        git fetch origin "refs/pull/$ENV:PULL_REQUEST/head"
 
-        if ((git rev-parse FETCH_HEAD) -ne '${{ github.event.pull_request.head.sha }}') {
+        if ((git rev-parse FETCH_HEAD) -ne $ENV:HEAD_SHA) {
           Write-Output '::error::The pull request head has changed after merge checks were evaluated.'
           exit 1
         }
 
-        git push origin "${{ github.event.pull_request.head.sha }}:refs/heads/$ENV:BASE_REF"
+        git push origin "${ENV:HEAD_SHA}:refs/heads/$ENV:BASE_REF"
 
-  cleanup:
-    needs: merge
-    if: always() && github.event.label.name == inputs.label
-
-    permissions:
-      pull-requests: write
-
-    runs-on: ubuntu-latest
-    steps:
-    - name: Remove the merge label
+    - name: Report the failure
+      if: failure()
       shell: pwsh
-      env:
-        GH_TOKEN: ${{ github.token }}
-        LABEL: ${{ inputs.label }}
       run: |
-        $Label = [uri]::EscapeDataString($ENV:LABEL)
-        gh api --method DELETE "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels/$Label" | Out-Null
-
-        if ($LastExitCode -ne 0) {
-          Write-Output "::warning::Unable to remove the label '$ENV:LABEL'."
-        }
-
-        # The label may already have been removed.
-        exit 0
+        gh pr comment $ENV:PULL_REQUEST `
+          --repo '${{ github.repository }}' `
+          --body 'Merge failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
