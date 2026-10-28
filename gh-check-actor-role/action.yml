@@ -1,4 +1,4 @@
-name: 'vasama/actions: check-actor-role'
+name: 'vasama/actions: gh-check-actor-role'
 description: 'Check that the actor who triggered the workflow has the admin or maintain role in the repository'
 author: 'Lauri Vasama'
 

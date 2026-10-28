@@ -1,4 +1,4 @@
-name: 'vasama/actions: check-branch-history'
+name: 'vasama/actions: git-check-branch-history'
 description: 'Check that the checked out branch is based on the current head of the base ref and has linear history'
 author: 'Lauri Vasama'
 

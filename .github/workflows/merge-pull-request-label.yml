@@ -20,7 +20,7 @@ jobs:
     if: github.event.label.name == inputs.label
     runs-on: ubuntu-latest
     steps:
-    - uses: vasama/actions/check-actor-role@main
+    - uses: vasama/actions/gh-check-actor-role@main
 
   dispatch:
     needs: authorize
@@ -57,18 +57,6 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-    - name: Remove the merge label
-      shell: pwsh
-      env:
-        GH_TOKEN: ${{ github.token }}
-        LABEL: ${{ inputs.label }}
-      run: |
-        $Label = [uri]::EscapeDataString($ENV:LABEL)
-        gh api --method DELETE "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels/$Label" | Out-Null
-
-        if ($LastExitCode -ne 0) {
-          Write-Output "::warning::Unable to remove the label '$ENV:LABEL'."
-        }
-
-        # The label may already have been removed.
-        exit 0
+    - uses: vasama/actions/gh-remove-label@main
+      with:
+        label: ${{ inputs.label }}

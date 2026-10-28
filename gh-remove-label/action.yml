@@ -1,0 +1,31 @@
+name: 'vasama/actions: gh-remove-label'
+description: 'Remove a label from a pull request or issue, if present'
+author: 'Lauri Vasama'
+
+inputs:
+  label:
+    description: 'Name of the label to remove'
+    required: true
+  number:
+    description: 'Pull request or issue number'
+    default: ${{ github.event.pull_request.number }}
+
+runs:
+  using: composite
+  steps:
+  - name: Remove label
+    shell: pwsh
+    env:
+      GH_TOKEN: ${{ github.token }}
+      LABEL: ${{ inputs.label }}
+      NUMBER: ${{ inputs.number }}
+    run: |
+      $Label = [uri]::EscapeDataString($ENV:LABEL)
+      gh api --method DELETE "repos/${{ github.repository }}/issues/$ENV:NUMBER/labels/$Label" | Out-Null
+
+      if ($LastExitCode -ne 0) {
+        Write-Output "::warning::Unable to remove the label '$ENV:LABEL'."
+      }
+
+      # The label may already have been removed.
+      exit 0
