@@ -83,8 +83,15 @@ def test_inherit_concatenates_lists_parent_first(tmp_path):
 def test_non_bool_inherit_raises(tmp_path):
 	write_package_info(tmp_path, { "inherit": "yes" })
 
-	with pytest.raises(Exception, match="Invalid inherit field"):
+	with pytest.raises(Exception, match="'yes' is not of type 'boolean'"):
 		read_package_info(str(tmp_path))
+
+def test_invalid_inherited_file_raises(tmp_path):
+	write_package_info(tmp_path, { "requirements": [{ "package": "a", "version": "1", "configs": "bogus" }] })
+	write_package_info(tmp_path / "pkg", { "inherit": True })
+
+	with pytest.raises(Exception, match=r"Invalid .*package_info\.json: 'bogus' does not match"):
+		read_package_info(str(tmp_path / "pkg"))
 
 
 def test_cli_prints_combined_json_without_inherit(tmp_path, run_script):

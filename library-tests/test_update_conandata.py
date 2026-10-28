@@ -13,9 +13,23 @@ REQ_C = { "reference": "c/1.0", "arguments": { "test": True } }
 
 
 def test_read_package_json(tmp_path):
-	write_package_info(tmp_path, { "license": "MIT", "requirements": [1] })
+	package_info = { "license": "MIT", "requirements": [{ "package": "a", "version": "1.0" }] }
+	write_package_info(tmp_path, package_info)
 
-	assert read_package_json(str(tmp_path)) == { "license": "MIT", "requirements": [1] }
+	assert read_package_json(str(tmp_path)) == package_info
+
+@pytest.mark.parametrize("requirement", [{ "package": "a" }, { "version": "1.0" }])
+def test_read_package_json_incomplete_requirement_raises(tmp_path, requirement):
+	write_package_info(tmp_path, { "requirements": [requirement] })
+
+	with pytest.raises(Exception, match="is a required property"):
+		read_package_json(str(tmp_path))
+
+def test_read_package_json_invalid_raises(tmp_path):
+	write_package_info(tmp_path, { "license": 1 })
+
+	with pytest.raises(Exception, match="1 is not of type 'string'"):
+		read_package_json(str(tmp_path))
 
 def test_read_package_json_missing_raises(tmp_path):
 	with pytest.raises(RuntimeError, match="package_info.json not found"):
@@ -81,12 +95,12 @@ def test_make_package_conandata_requirements_do_not_share_objects():
 def test_make_package_conandata_omits_empty_requirements():
 	assert "requirements" not in make_package_conandata({ "requirements": [] })
 
-def test_make_package_conandata_unsupported_config_raises():
-	with pytest.raises(RuntimeError, match="Unsupported requirement config"):
+def test_make_package_conandata_unsupported_config_asserts():
+	with pytest.raises(AssertionError):
 		make_requirements("unknown")
 
-def test_make_package_conandata_mistyped_configs_raises():
-	with pytest.raises(RuntimeError, match="Mistyped requirement configs"):
+def test_make_package_conandata_mistyped_configs_asserts():
+	with pytest.raises(AssertionError):
 		make_requirements(True)
 
 @pytest.mark.parametrize("configs", [

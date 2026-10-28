@@ -1,3 +1,2 @@
-frozendict
+-r ../library/scripts/Python/requirements.txt
 pytest
-pyyaml

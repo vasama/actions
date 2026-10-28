@@ -2,12 +2,13 @@
 
 import argparse
 import copy
-import json
 import os
 import sys
 import yaml
 
 from frozendict import frozendict, deepfreeze
+
+from read_package_info import load_package_info
 
 
 attribute_keys = {
@@ -42,8 +43,7 @@ def read_package_json(package_path):
 	if not os.path.isfile(path):
 		raise RuntimeError("package_info.json not found")
 
-	with open(path, "r") as file:
-		return json.load(file)
+	return load_package_info(path)
 
 def make_package_conandata(package):
 	data = dict()
@@ -56,18 +56,17 @@ def make_package_conandata(package):
 	for require in package.get("requirements", ()):
 		reference = f"{require["package"]}/{require["version"]}"
 
+		# The configs are validated by the package_info.json schema:
 		configs = require.get("configs", "header-library")
 		if isinstance(configs, str):
 			configs = [configs]
-		elif not isinstance(configs, list):
-			raise RuntimeError(f"Mistyped requirement configs for {reference}")
+		assert isinstance(configs, list)
 
 		# Each config is a separate use of the requirement:
 		build_contexts = set()
 		for config in configs:
 			data_config = requirement_configs.get(config)
-			if data_config is None:
-				raise RuntimeError(f"Unsupported requirement config for {reference}: {config}")
+			assert data_config is not None
 
 			# Conan allows only one requirement per reference in each context:
 			build_context = data_config.get("arguments", {}).get("build", False)

@@ -1,9 +1,32 @@
 #!/usr/bin/env python3
 
 import argparse
+import functools
 import json
 import os
 import sys
+
+import jsonschema
+
+schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "package_info.schema.json")
+
+@functools.cache
+def get_package_info_validator():
+	with open(schema_path, 'r') as file:
+		schema = json.load(file)
+
+	return jsonschema.Draft202012Validator(schema)
+
+def load_package_info(json_file):
+	with open(json_file, 'r') as file:
+		json_data = json.load(file)
+
+	try:
+		get_package_info_validator().validate(json_data)
+	except jsonschema.ValidationError as e:
+		raise Exception(f"Invalid {json_file}: {e.message}") from e
+
+	return json_data
 
 def read_package_info(directory):
 	json_file = os.path.join(directory, "package_info.json")
@@ -14,16 +37,10 @@ def read_package_info(directory):
 	json_layers = []
 
 	while True:
-		with open(json_file, 'r') as file:
-			json_data = json.load(file)
-
+		json_data = load_package_info(json_file)
 		json_layers.append(json_data)
 
-		inherit = json_data.get("inherit", False)
-		if not isinstance(inherit, bool):
-			raise Exception("Invalid inherit field in package_info.json")
-
-		if not inherit:
+		if not json_data.get("inherit", False):
 			break
 
 		# Search the parent directories for the inherited package_info.json:

@@ -42,6 +42,7 @@
 			"type": "array",
 			"items": {
 				"type": "object",
+				"required": ["package", "version"],
 				"properties": {
 					"package": {
 						"type": "string"
