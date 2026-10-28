@@ -22,8 +22,6 @@ class Conandata:
 		return value
 
 class Package(ConanFile):
-	url = "https://github.com/vasama/conan-index"
-
 	settings = "os", "arch", "compiler", "build_type"
 	generators = "CMakeDeps", "CMakeToolchain"
 

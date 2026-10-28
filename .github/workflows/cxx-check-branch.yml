@@ -1,6 +1,10 @@
 on:
   workflow_call:
     inputs:
+      index_repository:
+        description: 'Conan index repository name'
+        type: string
+        default: ${{ github.repository_owner }}/conan-index
       setup:
         type: string
       base_ref:
@@ -28,6 +32,8 @@ jobs:
     steps:
     - uses: vasama/actions/setup@main
     - uses: vasama/actions/setup-conan-index@main
+      with:
+        index_repository: ${{ inputs.index_repository }}
 
     - uses: actions/checkout@v7
       with:
@@ -63,6 +69,8 @@ jobs:
     - uses: vasama/actions/setup@main
     - uses: vasama/actions/setup-conan-windows@main
     - uses: vasama/actions/setup-conan-index@main
+      with:
+        index_repository: ${{ inputs.index_repository }}
 
     - name: Check branch
       shell: pwsh

@@ -65,4 +65,5 @@ jobs:
           -PackageName $ENV:PACKAGE_NAME `
           -PackageVersion $ENV:PACKAGE_VERSION `
           -ArchiveUrl $ENV:ARCHIVE_URL `
-          -ArchiveHash $ENV:ARCHIVE_HASH
+          -ArchiveHash $ENV:ARCHIVE_HASH `
+          -RecipeUrl '${{ github.server_url }}/${{ github.repository }}'

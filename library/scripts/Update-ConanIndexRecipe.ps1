@@ -9,6 +9,8 @@ param(
 	[string]$ArchiveUrl=$null,
 	[string]$ArchiveHash=$null,
 
+	[string]$RecipeUrl=$null,
+
 	[string]$Step=$null
 )
 
@@ -62,6 +64,11 @@ if (!$Step -or $Step -eq 'update-recipe') {
 		# Create the recipe directory:
 		New-Item -Path $RecipeDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
 
+		$ConandataArguments = @()
+		if ($RecipeUrl) {
+			$ConandataArguments += @('--recipe-url', $RecipeUrl)
+		}
+
 		# Update recipe conandata.yml:
 		python "$PSScriptRoot/Python/Conan/update_conandata.py" `
 			--source $SourceDir `
@@ -69,6 +76,7 @@ if (!$Step -or $Step -eq 'update-recipe') {
 			--version $PackageVersion `
 			--src-url $ArchiveUrl `
 			--src-hash $SourceHash `
+			@ConandataArguments `
 			$Conandata
 
 		# Update recipe config.yml, required by the local recipes index:

@@ -3,8 +3,8 @@ import os
 import yaml
 
 
-def make_recipe(root, name, versions):
-	recipe_dir = os.path.join(root, "recipes", name)
+def make_recipe(index_path, name, versions):
+	recipe_dir = os.path.join(index_path, "recipes", name)
 	os.makedirs(recipe_dir)
 
 	config = { "versions": { v: { "folder": f } for v, f in versions.items() } }
@@ -18,13 +18,13 @@ def test_prints_version_folder(tmp_path, run_script):
 	recipe_dir = make_recipe(tmp_path, "vsm.core", { "1.0.0": "all", "2.0.0": "v2" })
 
 	result = run_script("get_recipe_directory.py",
-		"--root", tmp_path,
+		"--index-path", tmp_path,
 		"--name", "vsm.core",
 		"--version", "2.0.0")
 
 	assert result.stdout.strip() == os.path.join(recipe_dir, "v2")
 
-def test_root_defaults_to_working_directory(tmp_path, run_script):
+def test_index_path_defaults_to_working_directory(tmp_path, run_script):
 	recipe_dir = make_recipe(tmp_path, "vsm.core", { "1.0.0": "all" })
 	os.mkdir(os.path.join(recipe_dir, "all"))
 
@@ -39,7 +39,7 @@ def test_unknown_version_fails(tmp_path, run_script):
 	make_recipe(tmp_path, "vsm.core", { "1.0.0": "all" })
 
 	result = run_script("get_recipe_directory.py",
-		"--root", tmp_path,
+		"--index-path", tmp_path,
 		"--name", "vsm.core",
 		"--version", "9.9.9",
 		check=False)

@@ -1,6 +1,10 @@
 on:
   workflow_call:
     inputs:
+      index_repository:
+        description: 'Conan index repository name'
+        type: string
+        default: ${{ github.repository_owner }}/conan-index
       setup:
         type: string
 
@@ -30,6 +34,8 @@ jobs:
     - uses: actions/checkout@v7
     - uses: vasama/actions/setup@main
     - uses: vasama/actions/setup-conan-index@main
+      with:
+        index_repository: ${{ inputs.index_repository }}
 
     - name: Set up user project
       if: ${{ inputs.setup }}
@@ -71,6 +77,8 @@ jobs:
     - uses: vasama/actions/setup@main
     - uses: vasama/actions/setup-conan-windows@main
     - uses: vasama/actions/setup-conan-index@main
+      with:
+        index_repository: ${{ inputs.index_repository }}
 
     - name: Set up user project
       if: ${{ inputs.setup }}

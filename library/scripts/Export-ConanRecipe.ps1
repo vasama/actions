@@ -23,8 +23,8 @@ if ($PackageChannel -and !$PackageUser) {
 $IndexPath = Resolve-Path -ErrorAction Stop $IndexPath
 
 if (!$Step -or $Step -eq 'conan-export') {
-	$RecipeDir = python "$PSScriptRoot/Python/Conan/get_recipe_directory.py" `
-		--root $IndexPath `
+	$RecipePath = python "$PSScriptRoot/Python/Conan/get_recipe_directory.py" `
+		--index-path $IndexPath `
 		--name $PackageName `
 		--version $PackageVersion
 
@@ -40,7 +40,7 @@ if (!$Step -or $Step -eq 'conan-export') {
 		$ConanArgs.Add($PackageChannel)
 	}
 
-	conan export --version $PackageVersion @ConanArgs $RecipeDir
+	conan export --version $PackageVersion @ConanArgs $RecipePath
 }
 
 if (!$Step -or $Step -eq 'conan-upload') {

@@ -191,7 +191,7 @@ def test_merge_ver_data_common_attributes_are_ordered():
 		"2.0": { "author": "a", "description": "d", "license": "MIT" },
 	}
 
-	assert list(merge_ver_data(ver_data).keys()) == ["license", "author", "description"]
+	assert list(merge_ver_data(ver_data).keys()) == ["author", "description", "license"]
 
 def test_merge_ver_data_identical_requirements():
 	ver_data = {
@@ -324,6 +324,17 @@ def test_cli_replaces_existing_version(tmp_path, package_directory, run_script):
 	assert conandata["common_attributes"] == { "license": "MIT", "description": "changed" }
 	assert "attributes" not in conandata
 	assert list(conandata["sources"].keys()) == ["1.0"]
+
+def test_cli_sets_recipe_url(tmp_path, package_directory, run_script):
+	conandata_path = tmp_path / "conandata.yml"
+
+	update_conandata(run_script, package_directory, conandata_path, "1.0", "--recipe-url", "https://example.com/index")
+	update_conandata(run_script, package_directory, conandata_path, "2.0", "--recipe-url", "https://example.com/index")
+
+	conandata = load_yaml(conandata_path)
+
+	assert conandata["common_attributes"] == { "license": "MIT", "description": "pkg", "url": "https://example.com/index" }
+	assert "attributes" not in conandata
 
 def test_cli_mismatched_name_fails(tmp_path, package_directory, run_script):
 	conandata_path = tmp_path / "conandata.yml"

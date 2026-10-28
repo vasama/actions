@@ -19,9 +19,6 @@ attribute_keys = {
 	"package_type": "package_type",
 }
 
-attribute_sort = {k:i for i, k in enumerate(attribute_keys.values())}
-attribute_sort["requirements"] = len(attribute_sort)
-
 # Conan requirement for each requirement config in package_info.json.
 # The arguments match those used by Conan's tool_requires and test_requires.
 # A visible tool requirement is also a build requirement of the consumers.
@@ -115,7 +112,7 @@ def merge_ver_data(ver_data):
 
 	ver_keys_set = [frozenset(x.keys()) for x in ver_data]
 	ver_keys_set = list(frozenset.intersection(*ver_keys_set))
-	ver_keys_set.sort(key=lambda x: attribute_sort[x])
+	ver_keys_set.sort()
 
 	for key in ver_keys_set:
 		frozen_values = set(deepfreeze(x.get(key)) for x in ver_data)
@@ -161,6 +158,8 @@ if __name__ == "__main__":
 	parser.add_argument('--src-url')
 	parser.add_argument('--src-hash')
 
+	parser.add_argument('--recipe-url')
+
 	parser.add_argument('conandata')
 
 	args = parser.parse_args()
@@ -179,6 +178,9 @@ if __name__ == "__main__":
 	package_path = os.getcwd() if args.source is None else args.source
 	ver_data = { v: get_ver_data(data, v) for v in data.get("sources", {}).keys() }
 	ver_data[args.version] = get_package_conandata(package_path)
+
+	if args.recipe_url is not None:
+		ver_data[args.version]["url"] = args.recipe_url
 
 	all_data = merge_ver_data(ver_data)
 

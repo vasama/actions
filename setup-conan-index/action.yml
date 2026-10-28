@@ -1,18 +1,22 @@
 name: 'vasama/actions: setup-conan-index'
-description: 'Download, extract and set up vasama/conan-index'
+description: 'Download and set up a Conan index repository as a local Conan remote'
 author: 'Lauri Vasama'
+
+inputs:
+  index_repository:
+    description: 'Conan index repository name'
+    default: ${{ github.repository_owner }}/conan-index
 
 runs:
   using: composite
   steps:
-  - name: Download conan-index archive
+  - name: Download Conan index
     shell: pwsh
-    run: Invoke-WebRequest -Uri 'https://github.com/vasama/conan-index/archive/refs/heads/main.zip' -OutFile "$ENV:RUNNER_TEMP/vsm-conan-index.zip"
-
-  - name: Extract conan-index files
-    shell: pwsh
-    run: Expand-Archive -LiteralPath "$ENV:RUNNER_TEMP/vsm-conan-index.zip" -DestinationPath "$ENV:RUNNER_TEMP/vsm-conan-index"
+    env:
+      INDEX_REPOSITORY: ${{ inputs.index_repository }}
+    run: |
+      git clone --depth 1 "https://github.com/$ENV:INDEX_REPOSITORY" "$ENV:RUNNER_TEMP/vsm-conan-index"
 
   - name: Set up local Conan remote
     shell: pwsh
-    run: conan remote add vasama "$ENV:RUNNER_TEMP/vsm-conan-index/conan-index-main"
+    run: conan remote add conan-index "$ENV:RUNNER_TEMP/vsm-conan-index"
