@@ -12,8 +12,7 @@ on:
         type: string
         default: merge-pull-request.yml
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   authorize:

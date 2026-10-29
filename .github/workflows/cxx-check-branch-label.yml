@@ -1,0 +1,60 @@
+name: Check branch label
+
+on:
+  workflow_call:
+    inputs:
+      label:
+        description: Check marker label
+        type: string
+        default: check-branch
+      workflow:
+        description: File name of the check workflow
+        type: string
+        default: cxx-check-branch.yml
+
+permissions: {}
+
+jobs:
+  rerun:
+    if: github.event.label.name == inputs.label
+
+    permissions:
+      actions: write
+
+    runs-on: ubuntu-latest
+    steps:
+    - name: Re-run the check
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+        WORKFLOW: ${{ inputs.workflow }}
+      run: |
+        $PSNativeCommandUseErrorActionPreference = $true
+
+        $Runs = gh run list `
+          --repo '${{ github.repository }}' `
+          --workflow $ENV:WORKFLOW `
+          --event pull_request `
+          --commit '${{ github.event.pull_request.head.sha }}' `
+          --limit 1 `
+          --json databaseId,status |
+          ConvertFrom-Json
+
+        if (!$Runs) {
+          Write-Output '::error::No check workflow run found for the pull request head.'
+          exit 1
+        }
+
+        $RunId = $Runs[0].databaseId
+
+        # Only completed runs can be re-run:
+        if ($Runs[0].status -ne 'completed') {
+          gh run cancel $RunId --repo '${{ github.repository }}'
+
+          do {
+            Start-Sleep -Seconds 5
+            $Status = (gh run view $RunId --repo '${{ github.repository }}' --json status | ConvertFrom-Json).status
+          } while ($Status -ne 'completed')
+        }
+
+        gh run rerun $RunId --repo '${{ github.repository }}'
