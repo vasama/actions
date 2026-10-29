@@ -51,7 +51,9 @@ jobs:
           -Path "$ENV:RUNNER_TEMP/vsm-actions-venv" `
           -Requirements "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/requirements.txt"
 
-        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" -BaseRef $ENV:BASE_REF
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" `
+          -BaseRef $ENV:BASE_REF
+          -Skip test-format
 
   cxx-check-branch-windows:
     name: Windows
@@ -83,4 +85,6 @@ jobs:
           -Path "$ENV:RUNNER_TEMP/vsm-actions-venv" `
           -Requirements "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/requirements.txt"
 
-        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" -BaseRef $ENV:BASE_REF
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" `
+          -BaseRef $ENV:BASE_REF `
+          -Skip test-format

@@ -12,8 +12,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 
 $ValidateScript = Resolve-Path -ErrorAction Stop "$PSScriptRoot/Python/Conan/validate_package_info.py"
 
-$Path = Resolve-Path -ErrorAction Stop $Path
-$PackageInfoFiles = @(git -C $Path ls-files -- ':(glob)**/package_info.json' | ForEach-Object { "$Path/$_" })
+$PackageInfoFiles = @(& "$PSScriptRoot/Utilities/Find-GitFiles.ps1" -Path $Path -Pattern 'package_info.json')
 
 if ($WhatIf) {
 	Write-Output "python $ValidateScript $PackageInfoFiles"
