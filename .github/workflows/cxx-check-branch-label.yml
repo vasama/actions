@@ -37,7 +37,7 @@ jobs:
           --event pull_request `
           --commit '${{ github.event.pull_request.head.sha }}' `
           --limit 1 `
-          --json databaseId,status |
+          --json databaseId |
           ConvertFrom-Json
 
         if (!$Runs) {
@@ -45,16 +45,11 @@ jobs:
           exit 1
         }
 
-        $RunId = $Runs[0].databaseId
+        $PSNativeCommandUseErrorActionPreference = $false
+        gh run rerun $Runs[0].databaseId --repo '${{ github.repository }}'
 
-        # Only completed runs can be re-run:
-        if ($Runs[0].status -ne 'completed') {
-          gh run cancel $RunId --repo '${{ github.repository }}'
-
-          do {
-            Start-Sleep -Seconds 5
-            $Status = (gh run view $RunId --repo '${{ github.repository }}' --json status | ConvertFrom-Json).status
-          } while ($Status -ne 'completed')
+        if ($LastExitCode -ne 0) {
+          Write-Output '::warning::Unable to re-run the check workflow.'
         }
 
-        gh run rerun $RunId --repo '${{ github.repository }}'
+        exit 0
