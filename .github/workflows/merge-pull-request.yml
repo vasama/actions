@@ -5,7 +5,7 @@ on:
     inputs:
       pull_request:
         description: Pull request number
-        type: number
+        type: string
         required: true
       head_sha:
         description: Expected pull request head commit
