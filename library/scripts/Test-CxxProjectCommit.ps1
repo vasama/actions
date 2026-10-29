@@ -1,31 +1,36 @@
 #!/usr/bin/pwsh
 
 param(
+	[string]$Step=$null,
 	[switch]$WhatIf=$false
 )
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-$TestScript = Resolve-Path -ErrorAction Stop "$PSScriptRoot/Test-CxxProject.ps1"
-
-$SetupScript = $ENV:VSM_CXX_PROJECT_SETUP
-if ($SetupScript) {
-	$SetupScript = Resolve-Path -ErrorAction Stop $SetupScript
+if (!$Step -or $Step -eq 'test-package-info') {
+	& "$PSScriptRoot/Test-PackageInfo.ps1" -WhatIf:$WhatIf
 }
 
-& "$PSScriptRoot/Test-PackageInfo.ps1" -WhatIf:$WhatIf
+if (!$Step -or $Step -eq 'test-project') {
+	$TestScript = Resolve-Path -ErrorAction Stop "$PSScriptRoot/Test-CxxProject.ps1"
 
-if ($WhatIf) {
+	$SetupScript = $ENV:VSM_CXX_PROJECT_SETUP
 	if ($SetupScript) {
-		Write-Output $SetupScript
+		$SetupScript = Resolve-Path -ErrorAction Stop $SetupScript
 	}
 
-	Write-Output "$TestScript -Config Release -ConanBuild missing -CMakeWarningsAsErrors"
-} else {
-	if ($SetupScript) {
-		& $SetupScript
-	}
+	if ($WhatIf) {
+		if ($SetupScript) {
+			Write-Output $SetupScript
+		}
 
-	& $TestScript -Config Release -ConanBuild missing -CMakeWarningsAsErrors
+		Write-Output "$TestScript -Config Release -ConanBuild missing -CMakeWarningsAsErrors"
+	} else {
+		if ($SetupScript) {
+			& $SetupScript
+		}
+
+		& $TestScript -Config Release -ConanBuild missing -CMakeWarningsAsErrors
+	}
 }
