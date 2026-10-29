@@ -1,0 +1,50 @@
+name: Merge pull request comment
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description: Merge command comment
+        type: string
+        default: /merge
+      workflow:
+        description: File name of the workflow to dispatch
+        type: string
+        default: merge-pull-request.yml
+
+permissions: {}
+
+jobs:
+  authorize:
+    if: github.event.issue.pull_request && github.event.comment.body == inputs.command
+    runs-on: ubuntu-latest
+    steps:
+    - uses: vasama/actions/gh-check-actor-role@main
+
+  dispatch:
+    needs: authorize
+
+    permissions:
+      actions: write
+      pull-requests: read
+
+    runs-on: ubuntu-latest
+    steps:
+    - name: Dispatch the merge
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+        WORKFLOW: ${{ inputs.workflow }}
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      run: |
+        $PSNativeCommandUseErrorActionPreference = $true
+
+        # The comment event does not include the pull request head and base:
+        $PullRequest = gh api 'repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}' | ConvertFrom-Json
+
+        gh workflow run $ENV:WORKFLOW `
+          --repo '${{ github.repository }}' `
+          --ref $ENV:DEFAULT_BRANCH `
+          -f 'pull_request=${{ github.event.issue.number }}' `
+          -f "head_sha=$($PullRequest.head.sha)" `
+          -f "base_ref=$($PullRequest.base.ref)"
