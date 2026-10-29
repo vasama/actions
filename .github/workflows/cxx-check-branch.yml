@@ -47,6 +47,10 @@ jobs:
     - name: Check branch
       shell: pwsh
       run: |
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Utilities/New-PythonEnvironment.ps1" `
+          -Path "$ENV:RUNNER_TEMP/vsm-actions-venv" `
+          -Requirements "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/requirements.txt"
+
         & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" -BaseRef $ENV:BASE_REF
 
   cxx-check-branch-windows:
@@ -75,4 +79,8 @@ jobs:
     - name: Check branch
       shell: pwsh
       run: |
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Utilities/New-PythonEnvironment.ps1" `
+          -Path "$ENV:RUNNER_TEMP/vsm-actions-venv" `
+          -Requirements "$ENV:RUNNER_TEMP/vsm-actions/scripts/Python/requirements.txt"
+
         & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Test-CxxProjectBranch.ps1" -BaseRef $ENV:BASE_REF
