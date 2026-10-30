@@ -11,4 +11,5 @@ runs:
 
   - name: Configure Conan
     shell: pwsh
-    run: conan config install "$ENV:RUNNER_TEMP/vsm-actions/conan-windows"
+    run: |
+      & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Install-WindowsConanConfig.ps1"

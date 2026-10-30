@@ -9,6 +9,6 @@ os=Windows
 
 [conf]
 tools.build:compiler_executables={"c": "clang", "cpp": "clang++"}
-tools.build:exelinkflags+=["clang_rt.builtins-x86_64.lib"]
-tools.build:sharedlinkflags+=["clang_rt.builtins-x86_64.lib"]
+tools.build:exelinkflags+=["-lclang_rt.builtins-x86_64"]
+tools.build:sharedlinkflags+=["-lclang_rt.builtins-x86_64"]
 tools.cmake.cmaketoolchain:generator=Ninja
