@@ -7,10 +7,6 @@ on:
         default: ${{ github.repository_owner }}/conan-index
       setup:
         type: string
-      config:
-        description: C++ build configuration name
-        type: string
-        default: Debug
       artifact_name:
         description: Name prefix of the uploaded HTML coverage report artifacts. The platform name is appended.
         type: string
@@ -55,16 +51,12 @@ jobs:
     - uses: vasama/actions/cxx-conan-cache-restore@main
       with:
         tool: clang
-        config: ${{ inputs.config }}
+        config: Debug
 
     - name: Generate coverage report
       shell: pwsh
-      env:
-        CONFIG: ${{ inputs.config }}
       run: |
         & "$ENV:RUNNER_TEMP/vsm-actions/scripts/New-CxxCoverageReport.ps1" `
-          -Config $ENV:CONFIG `
-          -ConanBuild missing `
           -OutputPath "$ENV:RUNNER_TEMP/coverage"
 
     - uses: actions/upload-artifact@v6
@@ -98,18 +90,14 @@ jobs:
     - uses: vasama/actions/cxx-conan-cache-restore@main
       with:
         tool: clang
-        config: ${{ inputs.config }}
+        config: Debug
 
     - name: Generate coverage report
       shell: pwsh
-      env:
-        CONFIG: ${{ inputs.config }}
       run: |
         & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Utilities/Set-VcVars.ps1"
 
         & "$ENV:RUNNER_TEMP/vsm-actions/scripts/New-CxxCoverageReport.ps1" `
-          -Config $ENV:CONFIG `
-          -ConanBuild missing `
           -OutputPath "$ENV:RUNNER_TEMP/coverage"
 
     - uses: actions/upload-artifact@v6

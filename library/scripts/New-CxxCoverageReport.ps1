@@ -1,13 +1,7 @@
 #!/usr/bin/pwsh
 
-# Builds and tests the project with Clang source-based coverage instrumentation,
-# and writes an HTML coverage report using llvm-cov.
-
 param(
-	[string]$Config='Debug',
-	[string]$ConanBuild=$null,
-	[string]$OutputPath='./coverage',
-	[switch]$WhatIf=$false
+	[string]$OutputPath='./coverage'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -18,7 +12,7 @@ $CoverageProfile = Resolve-Path -ErrorAction Stop "$PSScriptRoot/../conan/covera
 
 $TestArguments = @{
 	Tool = 'clang'
-	Config = $Config
+	Config = 'Debug'
 	ConanProfile = @($CoverageProfile.Path)
 }
 
@@ -29,22 +23,20 @@ $BuildDirectory = [System.IO.Path]::GetFullPath($BuildDirectory, (Get-Location).
 $ProfileDirectory = "$BuildDirectory/vsm-coverage"
 $ProfileData = "$ProfileDirectory/coverage.profdata"
 
-if ($WhatIf) {
-	Write-Output "LLVM_PROFILE_FILE=$ProfileDirectory/%p-%m.profraw"
-	& $TestScript @TestArguments -ConanBuild $ConanBuild -WhatIf
-	Write-Output "llvm-profdata merge -sparse -o $ProfileData $ProfileDirectory/*.profraw"
-	Write-Output "llvm-cov show -format=html -output-dir $OutputPath -instr-profile $ProfileData <test executables>"
-	return
-}
+# The instrumented binaries are found using the CMake file API:
+$FileApiDirectory = "$BuildDirectory/.cmake/api/v1"
+$FileApiQuery = "$FileApiDirectory/query/codemodel-v2"
 
 # Profiles from previous runs would distort the results:
 if (Test-Path $ProfileDirectory) {
 	Remove-Item -Recurse -Force $ProfileDirectory
 }
 
+New-Item -ItemType File -Force -Path $FileApiQuery | Out-Null
+
 $ENV:LLVM_PROFILE_FILE = "$ProfileDirectory/%p-%m.profraw"
 try {
-	& $TestScript @TestArguments -ConanBuild $ConanBuild
+	& $TestScript @TestArguments -ConanBuild missing
 } finally {
 	$ENV:LLVM_PROFILE_FILE = $null
 }
@@ -56,18 +48,41 @@ if (!$RawProfiles) {
 
 llvm-profdata merge -sparse -o $ProfileData @RawProfiles
 
-# The coverage mappings are read from the test executables built in the build directory:
-$Tests = (ctest --test-dir $BuildDirectory --show-only=json-v1 | ConvertFrom-Json).tests
-$PathComparison = if ($IsWindows) { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
-$BuildDirectoryPrefix = "$BuildDirectory$([System.IO.Path]::DirectorySeparatorChar)"
+function Read-FileApiReply($File) {
+	return Get-Content -Raw "$FileApiDirectory/reply/$File" | ConvertFrom-Json
+}
 
-$Objects = @($Tests |
-	ForEach-Object { if ($_.command) { [System.IO.Path]::GetFullPath($_.command[0]) } } |
-	Where-Object { $_.StartsWith($BuildDirectoryPrefix, $PathComparison) -and (Test-Path -PathType Leaf $_) } |
-	Sort-Object -Unique)
+# The newest index file describes the latest configuration:
+$FileApiIndex = Get-ChildItem -Path "$FileApiDirectory/reply" -Filter 'index-*.json' | Sort-Object Name | Select-Object -Last 1
+$Codemodel = Read-FileApiReply (Read-FileApiReply $FileApiIndex.Name).reply.'codemodel-v2'.jsonFile
+
+$CodemodelConfig = $Codemodel.configurations | Where-Object name -eq 'Debug'
+if (!$CodemodelConfig) {
+	throw 'The CMake code model does not contain the Debug configuration.'
+}
+
+$Objects = @()
+foreach ($TargetReference in $CodemodelConfig.targets) {
+	$Target = Read-FileApiReply $TargetReference.jsonFile
+
+	if ($Target.type -notin @('EXECUTABLE', 'SHARED_LIBRARY', 'MODULE_LIBRARY')) {
+		continue
+	}
+
+	foreach ($Artifact in $Target.artifacts) {
+		$Path = [System.IO.Path]::GetFullPath($Artifact.path, $Codemodel.paths.build)
+
+		# Import libraries and debug information files are also listed as artifacts on Windows:
+		$IsBinary = !$IsWindows -or [System.IO.Path]::GetExtension($Path) -in @('.exe', '.dll')
+
+		if ($IsBinary -and (Test-Path -PathType Leaf $Path)) {
+			$Objects += $Path
+		}
+	}
+}
 
 if (!$Objects) {
-	throw 'No test executables were found in the build directory.'
+	throw 'No binaries were found in the CMake code model.'
 }
 
 $ObjectArguments = @($Objects[0]) + @($Objects | Select-Object -Skip 1 | ForEach-Object { "-object=$_" })
