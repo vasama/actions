@@ -1,0 +1,5 @@
+[conf]
+&:tools.build:cflags+=["-fprofile-instr-generate", "-fcoverage-mapping"]
+&:tools.build:cxxflags+=["-fprofile-instr-generate", "-fcoverage-mapping"]
+&:tools.build:exelinkflags+=["-fprofile-instr-generate"]
+&:tools.build:sharedlinkflags+=["-fprofile-instr-generate"]

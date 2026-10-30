@@ -1,0 +1,118 @@
+on:
+  workflow_call:
+    inputs:
+      index_repository:
+        description: 'Conan index repository name'
+        type: string
+        default: ${{ github.repository_owner }}/conan-index
+      setup:
+        type: string
+      config:
+        description: C++ build configuration name
+        type: string
+        default: Debug
+      artifact_name:
+        description: Name prefix of the uploaded HTML coverage report artifacts. The platform name is appended.
+        type: string
+        default: coverage
+      linux:
+        description: Generate coverage on Linux
+        type: boolean
+        default: true
+      windows:
+        description: Generate coverage on Windows
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  coverage-linux:
+    name: Linux
+    if: inputs.linux
+
+    permissions:
+      contents: read
+
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/vasama/actions-ubuntu:v0_6
+
+    steps:
+    - uses: actions/checkout@v7
+    - uses: vasama/actions/setup@main
+    - uses: vasama/actions/setup-conan-index@main
+      with:
+        index_repository: ${{ inputs.index_repository }}
+
+    - name: Set up user project
+      if: ${{ inputs.setup }}
+      shell: pwsh
+      run: |
+        & '${{ inputs.setup }}'
+
+    # The coverage instrumentation applies to the project only, so the dependencies are shared with Clang builds:
+    - uses: vasama/actions/cxx-conan-cache-restore@main
+      with:
+        tool: clang
+        config: ${{ inputs.config }}
+
+    - name: Generate coverage report
+      shell: pwsh
+      env:
+        CONFIG: ${{ inputs.config }}
+      run: |
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/New-CxxCoverageReport.ps1" `
+          -Config $ENV:CONFIG `
+          -ConanBuild missing `
+          -OutputPath "$ENV:RUNNER_TEMP/coverage"
+
+    - uses: actions/upload-artifact@v6
+      with:
+        name: ${{ inputs.artifact_name }}-linux
+        path: ${{ runner.temp }}/coverage
+
+  coverage-windows:
+    name: Windows
+    if: inputs.windows
+
+    permissions:
+      contents: read
+
+    runs-on: windows-2025-vs2026
+
+    steps:
+    - uses: actions/checkout@v7
+    - uses: vasama/actions/setup@main
+    - uses: vasama/actions/setup-conan-windows@main
+    - uses: vasama/actions/setup-conan-index@main
+      with:
+        index_repository: ${{ inputs.index_repository }}
+
+    - name: Set up user project
+      if: ${{ inputs.setup }}
+      shell: pwsh
+      run: |
+        & '${{ inputs.setup }}'
+
+    - uses: vasama/actions/cxx-conan-cache-restore@main
+      with:
+        tool: clang
+        config: ${{ inputs.config }}
+
+    - name: Generate coverage report
+      shell: pwsh
+      env:
+        CONFIG: ${{ inputs.config }}
+      run: |
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/Utilities/Set-VcVars.ps1"
+
+        & "$ENV:RUNNER_TEMP/vsm-actions/scripts/New-CxxCoverageReport.ps1" `
+          -Config $ENV:CONFIG `
+          -ConanBuild missing `
+          -OutputPath "$ENV:RUNNER_TEMP/coverage"
+
+    - uses: actions/upload-artifact@v6
+      with:
+        name: ${{ inputs.artifact_name }}-windows
+        path: ${{ runner.temp }}/coverage

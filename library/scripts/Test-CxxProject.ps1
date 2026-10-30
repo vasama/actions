@@ -6,6 +6,7 @@ param(
 	[string]$BuildSystem=$null,
 
 	[string]$ConanBuild=$null,
+	[string[]]$ConanProfile=@(),
 	[string]$Step=$null,
 
 	[switch]$CMakeWarningsAsErrors=$false,
@@ -31,10 +32,13 @@ if ($Tool) {
 $DefaultBuildSystem = 'ninja'
 if ($IsWindows) {
 	$OS = 'windows'
-	$DefaultBuildSystem = 'visual-studio'
 
 	if (!$Compiler) {
 		$Compiler = 'msvc'
+	}
+
+	if ($Compiler -in @('msvc', 'clang-cl')) {
+		$DefaultBuildSystem = 'visual-studio'
 	}
 } elseif ($IsLinux) {
 	$OS = 'linux'
@@ -59,6 +63,10 @@ if (!$BuildSystem) {
 	} else {
 		$BuildSystem = $DefaultBuildSystem
 	}
+}
+
+if ($Compiler -eq 'clang' -and $BuildSystem -eq 'visual-studio') {
+	throw 'clang does not support visual-studio, use clang-cl instead'
 }
 
 if ($Analysis) {
@@ -112,9 +120,16 @@ if ($Analysis) {
 
 Include-ConanProfile 'tags-epilogue'
 
+# The additional profiles may not change the build folder variables.
+$ConanArguments += @($ConanProfile | ForEach-Object { "-pr=$_" })
+
 $ConanPreset = "$ConanPreset-$($Config.ToLowerInvariant())"
 $CMakePreset = "conan-$ConanPreset"
 $BuildDirectory = "./build/$ConanPreset"
+
+if ($Step -eq 'build-directory') {
+	Write-Output $BuildDirectory
+}
 
 if ($Step -eq 'conan-package-id') {
 	$ConanGraphInfo = conan graph info --format json @ConanArguments .

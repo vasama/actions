@@ -42,6 +42,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 	clang++-$LLVM_VERSION \
 	g++-$GCC_VERSION \
 	gcc-$GCC_VERSION \
+	llvm-$LLVM_VERSION \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Install Python tools:

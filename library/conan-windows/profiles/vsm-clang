@@ -8,7 +8,7 @@ compiler.version=22
 os=Windows
 
 [conf]
+tools.build:compiler_executables={"c": "clang", "cpp": "clang++"}
 tools.build:exelinkflags+=["clang_rt.builtins-x86_64.lib"]
 tools.build:sharedlinkflags+=["clang_rt.builtins-x86_64.lib"]
-tools.cmake.cmaketoolchain:generator=Visual Studio 18 2026
-tools.microsoft.msbuild:vs_version=18
+tools.cmake.cmaketoolchain:generator=Ninja
