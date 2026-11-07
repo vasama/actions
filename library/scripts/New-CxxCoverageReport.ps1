@@ -87,10 +87,11 @@ if (!$Objects) {
 
 $ObjectArguments = @($Objects[0]) + @($Objects | Select-Object -Skip 1 | ForEach-Object { "-object=$_" })
 
-$SourceDirectory = (Get-Location).Path
+$SourceDirectory = [System.IO.Path]::GetFullPath($Codemodel.paths.source)
+$CodemodelBuildDirectory = [System.IO.Path]::GetFullPath($Codemodel.paths.build)
 
 # The file names in the coverage mapping may use either path separator on Windows:
-$BuildDirectoryRegex = ($BuildDirectory -split '[/\\]' | ForEach-Object { [regex]::Escape($_) }) -join '[/\\]'
+$BuildDirectoryRegex = ($CodemodelBuildDirectory.TrimEnd('/', '\') -split '[/\\]' | ForEach-Object { [regex]::Escape($_) }) -join '[/\\]'
 
 llvm-cov show `
 	-format=html `
