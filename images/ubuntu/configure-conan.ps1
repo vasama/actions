@@ -39,7 +39,6 @@ function Generate-CompilerProfile($Compiler, $CXXCompiler, $Version) {
 }
 
 function Generate-DefaultProfile($Compiler, $Config) {
-	Write-Output "include(vsm-host)"
 	Write-Output "include(vsm-$Compiler)"
 
 	Write-Output '[settings]'
