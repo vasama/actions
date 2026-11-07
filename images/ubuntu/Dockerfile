@@ -25,9 +25,14 @@ RUN --mount=type=bind,source=images/ubuntu/add-llvm-apt-repository.sh,target=/tm
 RUN --mount=type=bind,source=images/ubuntu/add-microsoft-apt-repository.sh,target=/tmp/run.sh \
 	/tmp/run.sh
 
+# Install GitHub CLI APT repo:
+RUN --mount=type=bind,source=images/ubuntu/add-github-cli-apt-repository.sh,target=/tmp/run.sh \
+	/tmp/run.sh
+
 # Install miscellaneous packages:
 RUN apt-get update && apt-get install --no-install-recommends -y \
 	cmake \
+	gh \
 	git \
 	ninja-build \
 	pipx \
