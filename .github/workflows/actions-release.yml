@@ -23,6 +23,8 @@ jobs:
       with:
         file: images/ubuntu/Dockerfile
         platforms: linux/amd64
+        build-args: |
+          IMAGE_VERSION=${{ github.ref_name }}
         push: true
         tags: |
           ghcr.io/${{ vars.GHCR_USERNAME }}/actions-ubuntu:${{ github.ref_name }}

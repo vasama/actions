@@ -68,3 +68,8 @@ RUN --mount=type=bind,source=images/ubuntu/configure-conan.ps1,target=/tmp/run.p
 	/tmp/run.ps1 -Architecture x86_64 -GCC $GCC_VERSION -LLVM $LLVM_VERSION
 
 ENTRYPOINT ["pwsh"]
+
+ARG IMAGE_VERSION=dev
+
+LABEL org.opencontainers.image.source="https://github.com/vasama/actions"
+LABEL org.opencontainers.image.version="$IMAGE_VERSION"

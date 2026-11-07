@@ -8,9 +8,21 @@ param(
 	[string]$LLVM
 )
 
-$PSNativeCommandUseErrorActionPreference = $true
+$ErrorActionPreference = 'Stop'
 
-New-Item -ItemType 'SymbolicLink' -Path '/usr/bin/clang-format'  -Value "/usr/bin/clang-format-$LLVM"
-New-Item -ItemType 'SymbolicLink' -Path '/usr/bin/clang-tidy'    -Value "/usr/bin/clang-tidy-$LLVM"
-New-Item -ItemType 'SymbolicLink' -Path '/usr/bin/llvm-cov'      -Value "/usr/bin/llvm-cov-$LLVM"
-New-Item -ItemType 'SymbolicLink' -Path '/usr/bin/llvm-profdata' -Value "/usr/bin/llvm-profdata-$LLVM"
+function Add-LlvmToolLink($Tool) {
+	$Unversioned = "/usr/bin/$Tool"
+	$Versioned = "$Unversioned-$LLVM"
+
+	if (!(Test-Path -PathType Leaf $Versioned)) {
+		throw "LLVM tool '$Versioned' does not exist."
+	}
+
+	New-Item -ItemType 'SymbolicLink' -Path $Unversioned -Value $Versioned
+}
+
+Add-LlvmToolLink 'clang-format'
+Add-LlvmToolLink 'clang-tidy'
+Add-LlvmToolLink 'llvm-cov'
+Add-LlvmToolLink 'llvm-profdata'
+Add-LlvmToolLink 'llvm-symbolizer'
