@@ -7,7 +7,7 @@ param(
 
 	[string]$ConanBuild=$null,
 	[string[]]$ConanProfile=@(),
-	[string]$Step=$null,
+	[string[]]$Step=@(),
 
 	[switch]$CMakeWarningsAsErrors=$false,
 
@@ -16,6 +16,18 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
+
+# The steps arrive as a single comma separated string when invoked through pwsh -File:
+$Step = @($Step | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+
+$StepSet = [System.Collections.Generic.HashSet[string]]::new(
+	[string[]]$Step,
+	[StringComparer]::OrdinalIgnoreCase)
+
+# The steps always run in the order below, regardless of the order in which they are given:
+function Test-Step($Name) {
+	return $StepSet.Remove($Name)
+}
 
 $Compiler = $null
 $Analysis = $null
@@ -127,11 +139,11 @@ $ConanPreset = "$ConanPreset-$($Config.ToLowerInvariant())"
 $CMakePreset = "conan-$ConanPreset"
 $BuildDirectory = "./build/$ConanPreset"
 
-if ($Step -eq 'build-directory') {
+if (Test-Step 'build-directory') {
 	Write-Output $BuildDirectory
 }
 
-if ($Step -eq 'conan-package-id') {
+if (Test-Step 'conan-package-id') {
 	$ConanGraphInfo = conan graph info --format json @ConanArguments .
 	$ConanGraphInfo = (ConvertFrom-Json -AsHashtable "$ConanGraphInfo")['graph']
 
@@ -148,7 +160,7 @@ if ($Step -eq 'conan-package-id') {
 	Write-Output $ConanGraphRoot['package_id']
 }
 
-if (!$Step -or $Step -eq 'conan-install') {
+if (!$Step -or (Test-Step 'conan-install')) {
 	if ($ConanBuild) {
 		$ConanArguments += @("-b=$ConanBuild")
 	}
@@ -160,7 +172,7 @@ if (!$Step -or $Step -eq 'conan-install') {
 	}
 }
 
-if (!$Step -or $Step -eq 'cmake-configure') {
+if (!$Step -or (Test-Step 'cmake-configure')) {
 	$CMakeArguments = @("--preset", $CMakePreset)
 	if ($CMakeWarningsAsErrors) {
 		$CMakeArguments += @("-Werror=dev")
@@ -173,7 +185,7 @@ if (!$Step -or $Step -eq 'cmake-configure') {
 	}
 }
 
-if ((!$Step -and !$Analysis) -or $Step -eq 'cmake-build') {
+if ((!$Step -and !$Analysis) -or (Test-Step 'cmake-build')) {
 	if ($WhatIf) {
 		Write-Output "cmake --build --preset $CMakePreset"
 	} else {
@@ -181,7 +193,7 @@ if ((!$Step -and !$Analysis) -or $Step -eq 'cmake-build') {
 	}
 }
 
-if ((!$Step -and !$Analysis) -or $Step -eq 'ctest') {
+if ((!$Step -and !$Analysis) -or (Test-Step 'ctest')) {
 	if ($WhatIf) {
 		Write-Output "ctest --preset $CMakePreset --output-on-failure"
 	} else {
@@ -189,7 +201,7 @@ if ((!$Step -and !$Analysis) -or $Step -eq 'ctest') {
 	}
 }
 
-if ((!$Step -and $Analysis) -or $Step -eq 'analyze') {
+if ((!$Step -and $Analysis) -or (Test-Step 'analyze')) {
 	$CompileCommands = "$BuildDirectory/compile_commands.json"
 	$CompileCommands = ConvertFrom-Json (Get-Content -Raw $CompileCommands)
 
@@ -228,4 +240,8 @@ if ((!$Step -and $Analysis) -or $Step -eq 'analyze') {
 			exit 1
 		}
 	}
+}
+
+if ($StepSet.Count) {
+	throw "unknown steps: $($StepSet -join ', ')"
 }

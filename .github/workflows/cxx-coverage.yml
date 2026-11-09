@@ -59,7 +59,7 @@ jobs:
         & "$ENV:RUNNER_TEMP/vsm-actions/scripts/New-CxxCoverageReport.ps1" `
           -OutputPath "$ENV:RUNNER_TEMP/coverage"
 
-    - uses: actions/upload-artifact@v6
+    - uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.artifact_name }}-linux
         path: ${{ runner.temp }}/coverage
@@ -100,7 +100,7 @@ jobs:
         & "$ENV:RUNNER_TEMP/vsm-actions/scripts/New-CxxCoverageReport.ps1" `
           -OutputPath "$ENV:RUNNER_TEMP/coverage"
 
-    - uses: actions/upload-artifact@v6
+    - uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.artifact_name }}-windows
         path: ${{ runner.temp }}/coverage
