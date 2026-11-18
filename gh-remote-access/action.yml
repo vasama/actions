@@ -29,7 +29,7 @@ inputs:
     default: ''
   tags:
     description: 'Comma separated list of tags to advertise. The OAuth client must be allowed to assign them.'
-    default: 'tag:ci'
+    default: 'tag:github-actions'
   hostname:
     description: 'Tailscale hostname of the runner. Defaults to gh-<repository>-<job>-<run id>-<attempt>.'
     default: ''
