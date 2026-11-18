@@ -1,0 +1,82 @@
+name: 'vasama/actions: gh-remote-access'
+description: 'Join the runner to a Tailscale tailnet and serve SSH on it, blocking until released or timed out'
+author: 'Lauri Vasama'
+
+# Linux and macOS: Tailscale SSH is served by tailscaled. Access is controlled by the "ssh" section
+#   of the tailnet policy file. Requires passwordless sudo. Without a TUN device (e.g. in a job
+#   container), tailscaled runs in userspace networking mode.
+# Windows: Tailscale SSH is unsupported, so the Windows OpenSSH server is started instead and is
+#   reachable over the tailnet. Logins are authorized by the Tailscale identity of the connecting
+#   peer: any public key offered by a tailnet user (not a tagged node) listed in 'allowed-users' is
+#   accepted. With no 'allowed-users', any user allowed to reach port 22 by the tailnet policy is
+#   accepted. The SSH client must still offer some key, but it does not need to be registered.
+#   Only the job user may log in.
+#
+# Run continue-job in an SSH session to release the job.
+#
+# The node is registered as ephemeral and is logged out when the action completes.
+#
+# Authenticate with either 'oauth-secret', or with workload identity federation using
+# 'oauth-client-id' (requires the 'id-token: write' permission). The federation audience is the one
+# Tailscale generates for the client: api.tailscale.com/<client ID>.
+
+inputs:
+  oauth-secret:
+    description: 'Tailscale OAuth client secret (tskey-client-...) with the auth_keys scope for the given tags'
+    default: ''
+  oauth-client-id:
+    description: 'Tailscale federated identity client ID. Not a secret. Ignored if oauth-secret is set.'
+    default: ''
+  tags:
+    description: 'Comma separated list of tags to advertise. The OAuth client must be allowed to assign them.'
+    default: 'tag:ci'
+  hostname:
+    description: 'Tailscale hostname of the runner. Defaults to gh-<repository>-<job>-<run id>-<attempt>.'
+    default: ''
+  version:
+    description: 'Tailscale version to install, or "latest"'
+    default: 'latest'
+  timeout-minutes:
+    description: 'Minutes to wait for release before continuing the job. Zero waits indefinitely.'
+    default: '30'
+  allowed-users:
+    description: 'Windows only: Tailscale login names allowed to log in, separated by commas or whitespace. Defaults to any tailnet user. On Linux and macOS, use the "ssh" section of the tailnet policy file instead.'
+    default: ''
+
+runs:
+  using: composite
+  steps:
+  - name: Install SSH server
+    id: install
+    shell: pwsh
+    env:
+      TS_HOSTNAME: ${{ inputs.hostname }}
+      TS_ALLOWED_USERS: ${{ inputs.allowed-users }}
+    run: |
+      & "$ENV:GITHUB_ACTION_PATH/gh-remote-access.ps1" -Command Install
+
+  - name: Connect to tailnet
+    uses: tailscale/github-action@v4
+    with:
+      oauth-secret: ${{ inputs.oauth-secret }}
+      oauth-client-id: ${{ inputs.oauth-client-id }}
+      audience: ${{ (!inputs.oauth-secret && inputs.oauth-client-id) && format('api.tailscale.com/{0}', inputs.oauth-client-id) || '' }}
+      tags: ${{ inputs.tags }}
+      hostname: ${{ steps.install.outputs.hostname }}
+      version: ${{ inputs.version }}
+      args: ${{ steps.install.outputs.args }}
+      tailscaled-args: ${{ steps.install.outputs.tailscaled-args }}
+      statedir: ${{ steps.install.outputs.statedir }}
+
+  - name: Wait for release
+    shell: pwsh
+    env:
+      TS_TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
+    run: |
+      & "$ENV:GITHUB_ACTION_PATH/gh-remote-access.ps1" -Command Wait
+
+  - name: Disconnect from tailnet
+    if: always()
+    shell: pwsh
+    run: |
+      & "$ENV:GITHUB_ACTION_PATH/gh-remote-access.ps1" -Command Disconnect

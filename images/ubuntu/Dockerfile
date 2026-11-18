@@ -32,11 +32,13 @@ RUN --mount=type=bind,source=images/ubuntu/add-github-cli-apt-repository.sh,targ
 # Install miscellaneous packages:
 RUN apt-get update && apt-get install --no-install-recommends -y \
 	cmake \
+	curl \
 	gh \
 	git \
 	ninja-build \
 	pipx \
 	powershell \
+	sudo \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Install C++ compilers:

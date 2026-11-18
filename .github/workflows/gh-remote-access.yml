@@ -1,0 +1,37 @@
+name: GitHub remote access
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Runner platform
+        type: choice
+        required: true
+        options:
+        - ubuntu
+        - windows
+        - macos
+      timeout-minutes:
+        description: Minutes to wait for release before continuing the job. Zero waits indefinitely.
+        type: string
+        default: '30'
+
+permissions: {}
+
+jobs:
+  remote-access:
+    name: Remote access - ${{ inputs.platform }}
+
+    permissions:
+      contents: read
+      id-token: write
+
+    runs-on: ${{ inputs.platform }}-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: ./gh-remote-access
+      with:
+        oauth-client-id: ${{ vars.TS_OAUTH_CLIENT_ID }}
+        timeout-minutes: ${{ inputs.timeout-minutes }}
