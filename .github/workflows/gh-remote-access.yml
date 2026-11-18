@@ -1,6 +1,9 @@
 name: GitHub remote access
 
 on:
+  # TEMPORARY: registers the workflow from the feature branch so it can be dispatched. Remove after the first push.
+  push:
+    branches: [feature/gh-remote-access]
   workflow_dispatch:
     inputs:
       platform:
@@ -21,6 +24,7 @@ permissions: {}
 jobs:
   remote-access:
     name: Remote access - ${{ inputs.platform }}
+    if: github.event_name == 'workflow_dispatch'
 
     permissions:
       contents: read
