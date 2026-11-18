@@ -38,4 +38,5 @@ jobs:
     - uses: ./gh-remote-access
       with:
         oauth-client-id: ${{ vars.TS_OAUTH_CLIENT_ID }}
+        hostname: github-actions-${{ inputs.platform }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
